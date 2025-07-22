@@ -1,20 +1,29 @@
-<!-- form.html -->
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Форма регистрации</title>
-</head>
-<body>
-    <h1>Регистрация</h1>
-    <form action="/submit" method="POST">
-        <label for="name">Имя:</label><br>
-        <input type="text" id="name" name="name" required><br><br>
+    <head>
+        <meta charset="UTF-8">
+        <title>Регистрация</title>
+        <style>
+.error { color: red; }
+        </style>
+    </head>
+    <body>
+        <h1>Регистрация</h1>
+        <form id="registerForm" action="/register" method="POST">
+            <label>Email:</label><br>
+            <input type="email" name="email" required><br><br>
 
-        <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email" required><br><br>
+            <label>Пароль:</label><br>
+            <input type="password" name="password" id="password" required><br><br>
 
-        <button type="submit">Отправить</button>
-    </form>
-</body>
+            <label>Повторите пароль:</label><br>
+            <input type="password" name="passwordConfirm" id="passwordConfirm" required><br><br>
+
+            <span class="error" id="passwordError"></span><br>
+            <button type="submit">Зарегистрироваться</button>
+        </form>
+
+        <script src="/static/script.js">
+        </script>
+    </body>
 </html>
