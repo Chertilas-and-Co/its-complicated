@@ -54,11 +54,11 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getRegPage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	http.ServeFile(w, r, "form.html")
+	http.ServeFile(w, r, "static/form.html")
 }
 
 func getAuthPage(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	http.ServeFile(w, r, "auth.html")
+	http.ServeFile(w, r, "static/auth.html")
 }
 
 func registerHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -109,7 +109,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
-
+	log.Println("fucll")
 	if err := db.Ping(); err != nil {
 		log.Fatal(err)
 	}
