@@ -69,16 +69,35 @@ func registerHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 		return
 	}
 
-	password := r.FormValue("password")
-	passwordConfirm := r.FormValue("passwordConfirm")
-	fmt.Println(password, " ", passwordConfirm)
+	username := r.FormValue("login")
 
-	if password != passwordConfirm {
-		http.Error(w, "passwords do not match", http.StatusBadRequest)
+	salt, _ := generateSalt(32)
+	password1 := r.FormValue("password")
+	password2 := r.FormValue("passwordConfirm")
+
+	hash1 := hashPassword(password1, salt)
+	hash2 := hashPassword(password2, salt)
+
+	if hash1 != hash2 {
+		fmt.Println("Register: passwords do not match")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	w.Write([]byte("Registration success!"))
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)", username).Scan(&exists)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !exists {
+		insertInDB(username, hash1, salt)
+		fmt.Println("Register: insertion succesful!")
+		w.WriteHeader(200)
+	} else {
+		fmt.Println("Register: there is already user with this username, aborting:", username)
+		w.WriteHeader(405)
+	}
+
 }
 
 func authorize(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -152,15 +171,6 @@ func main() {
 	if err := db.Ping(); err != nil {
 		log.Fatal(err)
 	}
-
-	salt, _ := generateSalt(32)
-	insertInDB("aboba", hashPassword("aboba", salt), salt)
-	var name string
-	err = db.QueryRow("SELECT username FROM users WHERE id=$1", 1).Scan(&name)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("User name:", name)
 
 	log.Println("Database is ready to accept connections")
 	// Здесь дальше код запуска сервера и обработчиков
