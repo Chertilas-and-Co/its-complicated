@@ -2,7 +2,7 @@ package users
 
 import (
 	"bytes"
-	"encoding/hex" // Import for debugging
+	"encoding/hex"
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
@@ -32,8 +32,8 @@ type User struct {
 
 type UserData struct {
 	ID           int
-	PasswordHash []byte
-	Salt         []byte
+	PasswordHash string
+	Salt         string
 }
 
 func RegisterUser(c *gin.Context) {
@@ -94,7 +94,7 @@ func AuthorizeUser(c *gin.Context, sessionManager *scs.SessionManager) {
 	}
 
 	var userData UserData
-	// Allow user to log in with either username or email
+	// Read hex strings from the DB
 	err := pg.DB.QueryRow("SELECT id, password_hash, salt FROM users WHERE username = $1 OR email = $1", req.Login).
 		Scan(&userData.ID, &userData.PasswordHash, &userData.Salt)
 	if err != nil {
@@ -104,16 +104,28 @@ func AuthorizeUser(c *gin.Context, sessionManager *scs.SessionManager) {
 		return
 	}
 
-	// --- DEBUGGING LOGS ---
-	newlyComputedHash := password.HashPassword(req.Password, userData.Salt)
-	zap.S().Debugw("Password hash comparison",
-		"salt_from_db", hex.EncodeToString(userData.Salt),
-		"hash_from_db", hex.EncodeToString(userData.PasswordHash),
-		"hash_computed_now", hex.EncodeToString(newlyComputedHash),
-	)
-	// --- END DEBUGGING LOGS ---
+	// Decode hex strings back to bytes
+	saltBytes, err := hex.DecodeString(userData.Salt)
+	if err != nil {
+		zap.S().Errorw("Failed to decode salt from hex", "error", err)
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Internal server error"},
+		)
+		return
+	}
+	hashBytes, err := hex.DecodeString(userData.PasswordHash)
+	if err != nil {
+		zap.S().Errorw("Failed to decode hash from hex", "error", err)
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Internal server error"},
+		)
+		return
+	}
 
-	if bytes.Equal(newlyComputedHash, userData.PasswordHash) {
+	// Compare the byte slices
+	if bytes.Equal(password.HashPassword(req.Password, saltBytes), hashBytes) {
 		err = sessionManager.RenewToken(c.Request.Context())
 		if err != nil {
 			zap.S().Errorw("Failed to renew session token", "error", err)
