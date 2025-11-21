@@ -7,8 +7,8 @@ import (
 
 var DB *sql.DB
 
-func InsertInDB(username string, passwordHash []byte, salt []byte) {
-	result, err := DB.Exec("INSERT INTO users (username, email, password_hash, salt) VALUES ('aboba', $1, $2, $3)", username, passwordHash[:], salt)
+func InsertInDB(login string, email string, passwordHash []byte, salt []byte) {
+	result, err := DB.Exec("INSERT INTO users (username, email, password_hash, salt) VALUES ($1, $2, $3, $4)", login, email, passwordHash[:], salt)
 	if err != nil {
 		log.Println(err)
 	}

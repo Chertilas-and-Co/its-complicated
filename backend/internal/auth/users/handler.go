@@ -13,6 +13,7 @@ import (
 )
 
 type RegisterRequest struct {
+	Login           string `json:"login"`
 	Email           string `json:"email"`
 	Password        string `json:"password"`
 	PasswordConfirm string `json:"passwordConfirm"`
@@ -25,12 +26,13 @@ func RegisterHandler(c *gin.Context) {
 		return
 	}
 
-	username := req.Email
+	login := req.Login
+	email := req.Email
 
 	salt, _ := password.GenerateSalt(32)
 	password1 := req.Password
 	password2 := req.PasswordConfirm
-	fmt.Println(username, salt, password1, password2)
+	fmt.Println(login, salt, password1, password2)
 
 	hash1 := password.HashPassword(password1, salt)
 	hash2 := password.HashPassword(password2, salt)
@@ -42,16 +44,16 @@ func RegisterHandler(c *gin.Context) {
 	}
 
 	var exists bool
-	err := pg.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)", username).Scan(&exists)
+	err := pg.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", email).Scan(&exists)
 	if err != nil {
 		fmt.Println(err)
 	}
 	if !exists {
-		pg.InsertInDB(username, hash1, salt)
+		pg.InsertInDB(login, email, hash1, salt)
 		fmt.Println("Register: insertion succesful!")
 		c.String(http.StatusCreated, "Register succesful")
 	} else {
-		fmt.Println("Register: there is already user with this username, aborting:", username)
+		fmt.Println("Register: there is already user with this email, aborting:", email)
 		c.String(http.StatusConflict, "Register failed, user already exists")
 	}
 
