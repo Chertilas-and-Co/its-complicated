@@ -69,6 +69,7 @@ func main() {
 	})
 	// r.POST("/register", gin.HandlerFunc(registerHandler))
 	r.POST("/auth", gin.HandlerFunc(users.AuthorizeUser))
+	r.POST("/register", gin.HandlerFunc(users.RegisterHandler))
 	r.NoRoute(func(c *gin.Context) {
 		c.String(404, "not found")
 	})
