@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
@@ -101,15 +102,23 @@ func registerHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 
 }
 
-func authorize(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Form parse error", http.StatusBadRequest)
+type AuthRequest struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
+
+func authorize(c *gin.Context) {
+	var req AuthRequest
+
+	fmt.Println("assdasd")
+	// Декодируем JSON из тела запроса
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.String(http.StatusBadRequest, "Invalid JSON")
 		return
 	}
+	username := req.Login
 
-	username := r.FormValue("login")
-
-	password := r.FormValue("password")
+	password := req.Password
 
 	var userExists bool
 	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)", username).Scan(&userExists)
@@ -119,7 +128,7 @@ func authorize(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	if !userExists {
 		fmt.Println("Authorization: there is no user with such username:", username)
-		w.WriteHeader(400)
+		c.String(http.StatusBadRequest, "There is no user")
 		return
 	}
 	var correctHash []byte
@@ -136,10 +145,10 @@ func authorize(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	if bytes.Equal(hashPassword(password, salt), correctHash) {
 		fmt.Println("Authorization: success!")
-		w.WriteHeader(200)
+		c.String(http.StatusOK, "authorize success")
 	} else {
 		fmt.Println("Authorization: passwords do not match, aborting")
-		w.WriteHeader(401)
+		c.String(http.StatusUnauthorized, "authorize failure")
 	}
 }
 
@@ -207,16 +216,32 @@ func main() {
 	log.Println("Database is ready to accept connections")
 	// Здесь дальше код запуска сервера и обработчиков
 
-	router := httprouter.New()
-	router.ServeFiles("/static/*filepath", http.Dir("static"))
+	r := gin.Default()
 
-	router.GET("/auth", handleLogger(getAuthPage))
-	router.GET("/register", handleLogger(getRegPage))
-	router.NotFound = http.HandlerFunc(handlerFuncLogger(notFoundHandler))
-	router.GET("/hello/:name", handleLogger(hello))
-	router.POST("/register", handleLogger(registerHandler))
-	router.POST("/auth", handleLogger(authorize))
+	// Вешаем CORS (или ваше middleware)
+	r.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(200)
+			return
+		}
+		c.Next()
+	})
 
-	fmt.Println("Server is listening at :8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	// Вместо router.GET, router.POST и т.д.
+	// подключите ваши обработчики через gin, например:
+	// r.GET("/hello/:name", gin.HandlerFunc(hello))
+	r.GET("/register", func(c *gin.Context) {
+		c.File("static/form.html")
+	})
+	// r.POST("/register", gin.HandlerFunc(registerHandler))
+	r.POST("/auth", gin.HandlerFunc(authorize))
+	r.NoRoute(func(c *gin.Context) {
+		c.String(404, "not found")
+	})
+
+	// Запуск вашего сервера
+	r.Run(":8080")
 }
