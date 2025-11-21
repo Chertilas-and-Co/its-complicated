@@ -78,15 +78,7 @@ func main() {
 
 	r := gin.Default()
 
-	// Add session middleware for Gin
-	r.Use(func(c *gin.Context) {
-		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			c.Request = r
-			c.Next()
-		})
-		sessionManager.LoadAndSave(h).ServeHTTP(c.Writer, c.Request)
-	})
-
+	// CORS Middleware
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().
 			Set("Access-Control-Allow-Origin", "http://localhost:5173")
@@ -103,11 +95,13 @@ func main() {
 		c.Next()
 	})
 
+	// Public routes
 	r.POST("/register", users.RegisterUser)
 	r.POST("/auth", func(c *gin.Context) {
 		users.AuthorizeUser(c, sessionManager)
 	})
 
+	// Protected routes
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware(sessionManager))
 	{
@@ -119,7 +113,8 @@ func main() {
 	})
 
 	zap.S().Info("Starting server on :8080")
-	if err := r.Run(":8080"); err != nil {
+	// Use http.ListenAndServe with the scs middleware wrapping the gin router
+	if err := http.ListenAndServe(":8080", sessionManager.LoadAndSave(r)); err != nil {
 		zap.S().Fatalf("Failed to start server: %v", err)
 	}
 }
