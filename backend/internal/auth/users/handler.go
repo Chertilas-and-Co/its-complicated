@@ -1,10 +1,10 @@
-package auth_handler
+package users
 
 import (
 	"bytes"
 	"fmt"
-	"main/internal/pg"
 	passwd "main/internal/auth/password"
+	"main/internal/pg"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
