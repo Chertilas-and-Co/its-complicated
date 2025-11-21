@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"log"
-	"main/internal/handler"
+	"main/internal/auth/users"
 	"main/internal/pg"
 	"os"
 
@@ -13,10 +13,10 @@ import (
 	"go.uber.org/zap"
 )
 
-	func initLogger() {
-		logger, _ := zap.NewDevelopment()
-		zap.ReplaceGlobals(logger)
-	}
+func initLogger() {
+	logger, _ := zap.NewDevelopment()
+	zap.ReplaceGlobals(logger)
+}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -68,7 +68,7 @@ func main() {
 		c.File("static/form.html")
 	})
 	// r.POST("/register", gin.HandlerFunc(registerHandler))
-	r.POST("/auth", gin.HandlerFunc(handler.AuthorizeUser))
+	r.POST("/auth", gin.HandlerFunc(users.AuthorizeUser))
 	r.NoRoute(func(c *gin.Context) {
 		c.String(404, "not found")
 	})
