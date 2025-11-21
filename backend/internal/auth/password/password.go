@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 )
 
-func generateSalt(length int) ([]byte, error) {
+func GenerateSalt(length int) ([]byte, error) {
 	salt := make([]byte, length)
 	_, err := rand.Read(salt)
 	if err != nil {
@@ -14,7 +14,7 @@ func generateSalt(length int) ([]byte, error) {
 	return salt, nil
 }
 
-func hashPassword(password string, salt []byte) (hash []byte) {
+func HashPassword(password string, salt []byte) (hash []byte) {
 	data := append([]byte(password), salt...)
 	hash1 := sha256.Sum256(data)
 	hash = hash1[:]

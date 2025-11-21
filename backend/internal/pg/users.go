@@ -5,10 +5,10 @@ import (
   "database/sql"
 )
 
-var db *sql.DB
+var DB *sql.DB
 
-func insertInDB(username string, passwordHash []byte, salt []byte) {
-	result, err := db.Exec("INSERT INTO users (username, password_hash, salt) VALUES ($1, $2, $3)", username, passwordHash[:], salt)
+func InsertInDB(username string, passwordHash []byte, salt []byte) {
+	result, err := DB.Exec("INSERT INTO users (username, password_hash, salt) VALUES ($1, $2, $3)", username, passwordHash[:], salt)
 	if err != nil {
 		log.Println(err)
 	}

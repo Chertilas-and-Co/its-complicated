@@ -3,32 +3,43 @@ package main
 import (
 	"database/sql"
 	"log"
+	"main/internal/handler"
+	"main/internal/pg"
 	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"go.uber.org/zap"
 )
+
+	func initLogger() {
+		logger, _ := zap.NewDevelopment()
+		zap.ReplaceGlobals(logger)
+	}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Warning: .env file not set")
 	}
 
+	initLogger()
+	zap.S().Debug("aboba")
+
 	connStr := os.Getenv("DATABASE_URL")
 	if connStr == "" {
-		log.Fatal("DATABASE_URL is not set")
+		zap.S().Fatal("DATABASE_URL is not set")
 	}
 
 	var err error
-	db, err = sql.Open("postgres", connStr)
+	pg.DB, err = sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatal(err)
+		zap.S().Fatal(err)
 	}
-	defer db.Close()
+	defer pg.DB.Close()
 	log.Println("fucll")
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
+	if err := pg.DB.Ping(); err != nil {
+		zap.S().Fatal(err)
 	}
 
 	log.Println("Database is ready to accept connections")
@@ -57,7 +68,7 @@ func main() {
 		c.File("static/form.html")
 	})
 	// r.POST("/register", gin.HandlerFunc(registerHandler))
-	r.POST("/auth", gin.HandlerFunc(authorize))
+	r.POST("/auth", gin.HandlerFunc(handler.AuthorizeUser))
 	r.NoRoute(func(c *gin.Context) {
 		c.String(404, "not found")
 	})
