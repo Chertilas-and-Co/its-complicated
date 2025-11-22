@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"fmt"
+	"errors"
 
 	"log"
 )
@@ -411,16 +413,51 @@ func GetCommunitySubscribers(c *gin.Context) {
 	c.JSON(http.StatusOK, subscribers)
 }
 
+var ErrCommunityAlreadyExists = errors.New("community with this name already exists")
+
+// CreateCommunity inserts a new community into the database.
 func CreateCommunity(name, description string, creatorID int64) (int64, error) {
+	// Check if a community with the same name already exists
+	var exists bool
+	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM communities WHERE name = $1)", name).Scan(&exists)
+	if err != nil {
+		return 0, fmt.Errorf("failed to check for existing community: %w", err)
+	}
+	if exists {
+		return 0, ErrCommunityAlreadyExists
+	}
+
 	var newID int64
 	query := `
 		INSERT INTO communities (name, description, is_private, created_by, created_at) 
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
-	err := DB.QueryRow(query, name, description, false, creatorID, time.Now()).Scan(&newID)
+	err = DB.QueryRow(query, name, description, false, creatorID, time.Now()).Scan(&newID)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to insert community: %w", err)
 	}
 	return newID, nil
+}
+
+// InsertCommunitySubscription inserts a new subscription record into the database.
+func InsertCommunitySubscription(userID int64, communityID int64) error {
+	_, err := DB.Exec("INSERT INTO community_subscriptions (user_id, community_id) VALUES ($1, $2)", userID, communityID)
+	return err
+}
+
+// DeleteCommunitySubscription removes a subscription record from the database.
+func DeleteCommunitySubscription(userID int64, communityID int64) error {
+	_, err := DB.Exec("DELETE FROM community_subscriptions WHERE user_id = $1 AND community_id = $2", userID, communityID)
+	return err
+}
+
+// IsUserSubscribed checks if a user is subscribed to a community.
+func IsUserSubscribed(userID int64, communityID int64) (bool, error) {
+	var exists bool
+	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM community_subscriptions WHERE user_id = $1 AND community_id = $2)", userID, communityID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
