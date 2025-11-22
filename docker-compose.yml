@@ -11,24 +11,39 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql
       - ./backend/db:/docker-entrypoint-initdb.d:ro
-  #   healthcheck:
-  #        test: ["CMD-SHELL", "pg_isready -U postgres"]
-  #        interval: 5s
-  #        timeout: 5s
-  #        retries: 5
-  #
-  # backend:
-  #   build: ./src
-  #   image: backend:latest
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   ports:
-  #     - "8080:8080"
-  #   environment:
-  #     - DATABASE_URL=postgres://postgres:postgres@postgres:5432/user_passwords?sslmode=disable
+    healthcheck:
+         test: ["CMD-SHELL", "pg_isready -U postgres"]
+         interval: 5s
+         timeout: 5s
+         retries: 5
+
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    container_name: dragonfly_db
+    ports:
+      - "6379:6379"
+    volumes:
+      - dragonflydata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-h", "localhost", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    image: backend:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dragonfly:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/user_passwords?sslmode=disable
+      - DRAGONFLY_URL=redis://dragonfly:6379
+
 volumes:
   pgdata:
-
-
-
+  dragonflydata:

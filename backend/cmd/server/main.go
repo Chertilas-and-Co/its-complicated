@@ -2,16 +2,26 @@ package main
 
 import (
 	"database/sql"
-	"log"
+	"net/http"
 	"os"
+	"time"
 
+	"github.com/alexedwards/scs/redisstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/gomodule/redigo/redis"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 
 	"main/internal/auth/users"
+	"main/internal/middleware"
 	"main/internal/pg"
+)
+
+var (
+	sessionManager *scs.SessionManager
+	redisPool      *redis.Pool
 )
 
 func initLogger() {
@@ -21,11 +31,33 @@ func initLogger() {
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Println("Warning: .env file not set")
+		zap.S().Warn(".env file not found")
 	}
 
 	initLogger()
-	zap.S().Debug("Application starting...")
+
+	sessionManager = scs.New()
+	redisAddr := os.Getenv("DRAGONFLY_URL")
+	if redisAddr == "" {
+		redisAddr = "redis://localhost:6379"
+	}
+
+	redisPool = &redis.Pool{
+		MaxIdle:     10,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			return redis.DialURL(redisAddr)
+		},
+	}
+	zap.S().Info("Successfully configured Redis connection pool for Dragonfly")
+
+	sessionManager.Store = redisstore.New(redisPool)
+	sessionManager.Lifetime = 24 * time.Hour
+	sessionManager.Cookie.Name = "session_id"
+	sessionManager.Cookie.HttpOnly = true
+	sessionManager.Cookie.Persist = true
+	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
+	sessionManager.Cookie.Secure = false // Set to true in production with HTTPS
 
 	connStr := os.Getenv("DATABASE_URL")
 	if connStr == "" {
@@ -35,15 +67,14 @@ func main() {
 	var err error
 	pg.DB, err = sql.Open("postgres", connStr)
 	if err != nil {
-		zap.S().Fatal(err)
+		zap.S().Fatalf("Failed to open database connection: %v", err)
 	}
 	defer pg.DB.Close()
 
 	if err := pg.DB.Ping(); err != nil {
-		zap.S().Fatal(err)
+		zap.S().Fatalf("Failed to ping database: %v", err)
 	}
-
-	log.Println("Database is ready to accept connections")
+	zap.S().Info("Database is ready to accept connections")
 
 	r := gin.Default()
 
@@ -52,9 +83,11 @@ func main() {
 		c.Writer.Header().
 			Set("Access-Control-Allow-Origin", "http://localhost:5173")
 		c.Writer.Header().
-			Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+			Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
 		c.Writer.Header().
-			Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			Set("Access-Control-Allow-Headers", "Content-Type, X-Requested-With")
+		c.Writer.Header().
+			Set("Access-Control-Allow-Credentials", "true")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(200)
 			return
@@ -62,31 +95,26 @@ func main() {
 		c.Next()
 	})
 
-	r.GET("/register", func(c *gin.Context) {
-		c.File("static/form.html")
+	// Public routes
+	r.POST("/register", users.RegisterUser)
+	r.POST("/auth", func(c *gin.Context) {
+		users.AuthorizeUser(c, sessionManager)
 	})
 
-	r.POST("/auth", gin.HandlerFunc(users.AuthorizeUser))
-	r.POST("/register", gin.HandlerFunc(users.RegisterHandler))
-	profileRepo := profile.NewRepository(pg.DB)
-	profileHandler := profile.NewHandler(profileRepo)
-	profile.RegisterRoutes(
-		r,
-		profileHandler,
-	) // ← ВСЕ маршруты регистрируются автоматически!
-
-	r.POST("/profile/posts", handler.CreatePost)
-	r.GET("/profile/:userID/posts", handler.GetUserPosts)
-	r.GET("/profile/posts/:postID", handler.GetPost)
-	r.PUT("/profile/posts/:postID", handler.UpdatePost)
-	r.DELETE("/profile/posts/:postID", handler.DeletePost)
-	r.POST("/profile/posts/:postID/like", handler.LikePost)
-	r.DELETE("profile/posts/:postID/like", handler.UnlikePost)
+	// Protected routes
+	api := r.Group("/api")
+	api.Use(middleware.AuthMiddleware(sessionManager))
+	{
+		api.GET("/users", users.GetAllUsers)
+	}
 
 	r.NoRoute(func(c *gin.Context) {
 		c.String(404, "not found")
 	})
 
-	log.Println("Starting server on :8080")
-	r.Run(":8080")
+	zap.S().Info("Starting server on :8080")
+	// Use http.ListenAndServe with the scs middleware wrapping the gin router
+	if err := http.ListenAndServe(":8080", sessionManager.LoadAndSave(r)); err != nil {
+		zap.S().Fatalf("Failed to start server: %v", err)
+	}
 }

@@ -2,29 +2,29 @@ package pg
 
 import (
 	"database/sql"
-	"log"
+	"encoding/hex" // Needed for encoding
+	"fmt"
 )
 
 var DB *sql.DB
 
-func InsertInDB(login string, email string, passwordHash []byte, salt []byte) {
-	result, err := DB.Exec("INSERT INTO users (username, email, password_hash, salt) VALUES ($1, $2, $3, $4)", login, email, passwordHash[:], salt)
+func InsertInDB(username, email string, passwordHash, salt []byte) error {
+	// Encode data to hex strings
+	hashHex := hex.EncodeToString(passwordHash)
+	saltHex := hex.EncodeToString(salt)
+
+	// Insert the hex strings as plain text
+	_, err := DB.Exec(
+		"INSERT INTO users (username, email, password_hash, salt) VALUES ($1, $2, $3, $4)",
+		username,
+		email,
+		hashHex,
+		saltHex,
+	)
 	if err != nil {
-		log.Println(err)
+		return fmt.Errorf("failed to insert user into database: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-
-	if err != nil {
-		log.Println(err)
-	}
-	log.Println("Rows affected:", rowsAffected)
-
-	lastInsertID, err := result.LastInsertId()
-
-	if err != nil {
-		log.Println(err)
-	}
-	log.Println("Last inserted id:", lastInsertID)
-
+	return nil
 }
+

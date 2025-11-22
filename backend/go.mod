@@ -3,7 +3,10 @@ module main
 go 1.25.4
 
 require (
+	github.com/alexedwards/scs/redisstore v0.0.0-20251002162104-209de6e426de
+	github.com/alexedwards/scs/v2 v2.9.0
 	github.com/gin-gonic/gin v1.11.0
+	github.com/gomodule/redigo v1.8.0
 	github.com/joho/godotenv v1.5.1
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.10.9

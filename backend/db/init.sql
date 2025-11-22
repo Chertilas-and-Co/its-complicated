@@ -1,10 +1,10 @@
 -- Осовная таблица пользователей
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
-    username VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    salt bytea NOT NULL,
+    password_hash TEXT NOT NULL,
+    salt TEXT NOT NULL,
     bio TEXT,
     avatar BYTEA,
     avatar_url VARCHAR(255)
