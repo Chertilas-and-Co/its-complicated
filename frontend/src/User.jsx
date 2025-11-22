@@ -1,28 +1,6 @@
 import React from 'react';
 import Navbar from './Navbar';
 
-function ButtonDeletePost (){
-  return (
-    <button
-      aria-label="Удалить пост"
-      title="Удалить пост"
-      style={{
-        background: 'transparent',
-        border: 'none',
-        color: 'crimson',
-        fontSize: '18px',
-        fontWeight: 'bold',
-        cursor: 'pointer',
-        padding: '4px 8px',
-        borderRadius: '4px',
-        transition: 'background-color 0.2s',
-      }}
-    >
-      ×
-    </button>
-  );
-}
-
 function Search() {
   return (
     <div style={{
@@ -246,7 +224,6 @@ function PostsList({ posts }) {
               color: '#666'
             }}>
               {post.date}
-              <ButtonDeletePost/>
             </div>
           </div>
         </div>
