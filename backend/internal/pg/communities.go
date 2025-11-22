@@ -333,3 +333,73 @@ func GetGraphData(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+func GetCommunitySubscribers(c *gin.Context) {
+	idStr := c.Param("id")
+	communityID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid community id"})
+		return
+	}
+
+	var exists bool
+	err = DB.QueryRow("SELECT EXISTS(SELECT 1 FROM communities WHERE id = $1)", communityID).Scan(&exists)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error checking community"})
+		return
+	}
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{"error": "community not found"})
+		return
+	}
+
+	query := `
+		SELECT u.id, u.username, u.email, u.bio, u.avatar_url
+		FROM community_subscriptions cs
+		JOIN users u ON cs.user_id = u.id
+		WHERE cs.community_id = $1
+		ORDER BY u.id;
+	`
+
+	rows, err := DB.Query(query, communityID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "cannot fetch subscribers"})
+		return
+	}
+	defer rows.Close()
+
+	var subscribers []models.User
+	for rows.Next() {
+		var user models.User
+		var bio sql.NullString
+		var avatarURL sql.NullString
+
+		err := rows.Scan(
+			&user.ID,
+			&user.Username,
+			&user.Email,
+			&bio,
+			&avatarURL,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error reading subscriber"})
+			return
+		}
+
+		// Преобразуем sql.NullString в string
+		if bio.Valid {
+			user.Bio = bio.String
+		} else {
+			user.Bio = ""
+		}
+		if avatarURL.Valid {
+			user.AvatarURL = avatarURL.String
+		} else {
+			user.AvatarURL = ""
+		}
+
+		subscribers = append(subscribers, user)
+	}
+
+	c.JSON(http.StatusOK, subscribers)
+}
