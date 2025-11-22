@@ -100,6 +100,8 @@ func main() {
 	r.POST("/auth", func(c *gin.Context) {
 		users.AuthorizeUser(c, sessionManager)
 	})
+	r.GET("/community/:id", pg.GetCommunityByID)
+	r.GET("/communities", pg.GetAllCommunities)
 
 	// Protected routes
 	api := r.Group("/api")
