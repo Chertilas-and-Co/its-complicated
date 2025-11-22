@@ -182,7 +182,6 @@ function ForceGraph() {
                 <div
                     style={{
                         position: "absolute",
-                        top: 100,
                         left: (hoverNode.x || 0) + 10,
                         backgroundColor: "rgba(255, 255, 255, 0.9)",
                         padding: "6px 8px",
@@ -192,7 +191,6 @@ function ForceGraph() {
                         whiteSpace: "nowrap",
                         fontSize: 12,
                         zIndex: 10,
-                        transform: "translate(-50%, -100%)",
                     }}
                 >
                     {hoverNode.description}
