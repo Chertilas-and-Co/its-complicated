@@ -18,6 +18,7 @@ import (
 	community "main/internal/community/posts"
 	"main/internal/middleware"
 	"main/internal/pg"
+	"main/internal/profile/friends"
 	profile "main/internal/profile/posts"
 )
 
@@ -134,6 +135,23 @@ func main() {
 		api.POST("/logout", func(c *gin.Context) {
 			users.LogoutUser(c, sessionManager)
 		})
+
+		// Friend routes
+		api.POST("/friends/requests", func(c *gin.Context) {
+			friends.SendFriendRequestHandler(c, sessionManager)
+		})
+		api.GET("/friends", func(c *gin.Context) {
+			friends.GetFriendsHandler(c, sessionManager)
+		})
+		api.DELETE("/friends/:friend_id", func(c *gin.Context) {
+			friends.DeleteFriendHandler(c, sessionManager)
+		})
+		api.GET("/friends/requests/incoming", func(c *gin.Context) {
+			friends.GetIncomingRequestsHandler(c, sessionManager)
+		})
+		api.PUT("/friends/requests/:request_id", func(c *gin.Context) {
+			friends.UpdateFriendRequestHandler(c, sessionManager)
+		})
 	}
 
 	r.NoRoute(func(c *gin.Context) {
@@ -148,3 +166,4 @@ func main() {
 }
 
 // ABOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOBA
+
