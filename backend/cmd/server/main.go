@@ -104,6 +104,7 @@ func main() {
 	r.POST("/auth", func(c *gin.Context) {
 		users.AuthorizeUser(c, sessionManager)
 	})
+	r.GET("/communities/:id/subscribers", pg.GetCommunitySubscribers)
 	r.GET("/community/:id", pg.GetCommunityByID)
 	r.GET("/communities", pg.GetAllCommunities)
 
