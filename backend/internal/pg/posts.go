@@ -1,44 +1,32 @@
-package profile
+package pg
 
 import (
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-	"main/internal/models"
 
 	"github.com/lib/pq"
+
+	"main/internal/models"
 )
 
-// Custom errors for profile operations
 var (
 	ErrPostNotFound = errors.New("post not found")
 	ErrAlreadyLiked = errors.New("already liked")
 	ErrNotLiked     = errors.New("not liked")
 )
 
-// Repository handles database operations for profile posts
-type Repository struct {
-	db *sql.DB
-}
-
-// NewRepository creates a new profile repository
-func NewRepository(db *sql.DB) *Repository {
-	return &Repository{
-		db: db,
-	}
-}
-
 // CreatePost creates a new post in the database
 // Возвращает созданный пост с заполненным ID и временем создания
-func (r *Repository) CreatePost(ctx context.Context, post *models.Post) error {
+func CreatePost(ctx context.Context, post *models.Post) error {
 	const query = `
 		INSERT INTO posts (title, text, pic_url, community_id, author_id, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 
-	err := r.db.QueryRowContext(ctx, query,
+	err := DB.QueryRowContext(ctx, query,
 		post.Title,       // $1 - название поста
 		post.Text,        // $2 - содержание поста
 		post.PicURL,      // $3 - ссылка на картинку
@@ -55,7 +43,7 @@ func (r *Repository) CreatePost(ctx context.Context, post *models.Post) error {
 
 // GetPostByID retrieves a single post by its ID
 // Возвращает ошибку ErrPostNotFound если пост не найден
-func (r *Repository) GetPostByID(
+func GetPostByID(
 	ctx context.Context,
 	postID int64,
 ) (*models.Post, error) {
@@ -67,7 +55,7 @@ func (r *Repository) GetPostByID(
 
 	post := &models.Post{}
 
-	err := r.db.QueryRowContext(ctx, query, postID).Scan(
+	err := DB.QueryRowContext(ctx, query, postID).Scan(
 		&post.ID,
 		&post.Title,
 		&post.Text,
@@ -91,7 +79,7 @@ func (r *Repository) GetPostByID(
 // GetUserPosts retrieves all posts for a specific user with pagination
 // CommunityID = UserID для постов в профиле
 // Возвращает слайс постов, общее количество постов и ошибку
-func (r *Repository) GetUserPosts(
+func GetUserPosts(
 	ctx context.Context,
 	userID int64,
 	limit, offset int,
@@ -104,7 +92,7 @@ func (r *Repository) GetUserPosts(
 	`
 
 	var total int64
-	err := r.db.QueryRowContext(ctx, countQuery, userID).Scan(&total)
+	err := DB.QueryRowContext(ctx, countQuery, userID).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count posts: %w", err)
 	}
@@ -118,7 +106,7 @@ func (r *Repository) GetUserPosts(
 		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := r.db.QueryContext(ctx, postsQuery, userID, limit, offset)
+	rows, err := DB.QueryContext(ctx, postsQuery, userID, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to fetch posts: %w", err)
 	}
@@ -156,7 +144,7 @@ func (r *Repository) GetUserPosts(
 
 // UpdatePost updates an existing post
 // Обновляет title, text, pic_url и updated_at
-func (r *Repository) UpdatePost(ctx context.Context, post *models.Post) error {
+func UpdatePost(ctx context.Context, post *models.Post) error {
 	const query = `
 		UPDATE posts
 		SET title = $1, text = $2, pic_url = $3, updated_at = NOW()
@@ -164,7 +152,7 @@ func (r *Repository) UpdatePost(ctx context.Context, post *models.Post) error {
 		RETURNING updated_at
 	`
 
-	err := r.db.QueryRowContext(ctx, query,
+	err := DB.QueryRowContext(ctx, query,
 		post.Title,    // $1 - новое название
 		post.Text,     // $2 - новое содержание
 		post.PicURL,   // $3 - новая ссылка на картинку
@@ -183,13 +171,13 @@ func (r *Repository) UpdatePost(ctx context.Context, post *models.Post) error {
 }
 
 // DeletePost deletes a post by its ID
-func (r *Repository) DeletePost(ctx context.Context, postID int64) error {
+func DeletePost(ctx context.Context, postID int64) error {
 	const query = `
 		DELETE FROM posts
 		WHERE id = $1
 	`
 
-	result, err := r.db.ExecContext(ctx, query, postID)
+	result, err := DB.ExecContext(ctx, query, postID)
 	if err != nil {
 		return fmt.Errorf("failed to delete post: %w", err)
 	}
@@ -208,13 +196,13 @@ func (r *Repository) DeletePost(ctx context.Context, postID int64) error {
 
 // LikePost adds a like to a post
 // Возвращает ошибку ErrAlreadyLiked если пользователь уже лайкнул этот пост
-func (r *Repository) LikePost(ctx context.Context, postID, userID int64) error {
+func LikePost(ctx context.Context, postID, userID int64) error {
 	const query = `
 		INSERT INTO post_likes (post_id, user_id, created_at)
 		VALUES ($1, $2, NOW())
 	`
 
-	_, err := r.db.ExecContext(ctx, query, postID, userID)
+	_, err := DB.ExecContext(ctx, query, postID, userID)
 	if err != nil {
 		// Проверяем на нарушение уникальности (уже существует лайк)
 		if err, ok := err.(*pq.Error); ok && err.Code == "23505" {
@@ -228,7 +216,7 @@ func (r *Repository) LikePost(ctx context.Context, postID, userID int64) error {
 
 // UnlikePost removes a like from a post
 // Возвращает ошибку ErrNotLiked если пользователь не лайкал этот пост
-func (r *Repository) UnlikePost(
+func UnlikePost(
 	ctx context.Context,
 	postID, userID int64,
 ) error {
@@ -237,7 +225,7 @@ func (r *Repository) UnlikePost(
 		WHERE post_id = $1 AND user_id = $2
 	`
 
-	result, err := r.db.ExecContext(ctx, query, postID, userID)
+	result, err := DB.ExecContext(ctx, query, postID, userID)
 	if err != nil {
 		return fmt.Errorf("failed to unlike post: %w", err)
 	}

@@ -17,6 +17,7 @@ import (
 	"main/internal/auth/users"
 	"main/internal/middleware"
 	"main/internal/pg"
+	"main/internal/profile"
 )
 
 var (
@@ -83,7 +84,7 @@ func main() {
 		c.Writer.Header().
 			Set("Access-Control-Allow-Origin", "http://localhost:5173")
 		c.Writer.Header().
-			Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+			Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		c.Writer.Header().
 			Set("Access-Control-Allow-Headers", "Content-Type, X-Requested-With")
 		c.Writer.Header().
@@ -101,11 +102,19 @@ func main() {
 		users.AuthorizeUser(c, sessionManager)
 	})
 
+	r.GET("/:userID/posts", profile.GetUserPosts)
+	r.GET("/posts/:postID", profile.GetPost)
+
 	// Protected routes
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware(sessionManager))
 	{
 		api.GET("/users", users.GetAllUsers)
+		api.POST("/posts", profile.CreatePost)
+		api.PUT("/posts/:postID", profile.UpdatePost)
+		api.DELETE("/posts/:postID", profile.DeletePost)
+		api.POST("/posts/:postID/like", profile.LikePost)
+		api.DELETE("/posts/:postID/like", profile.UnlikePost)
 	}
 
 	r.NoRoute(func(c *gin.Context) {
@@ -118,3 +127,5 @@ func main() {
 		zap.S().Fatalf("Failed to start server: %v", err)
 	}
 }
+
+// ABOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOBA

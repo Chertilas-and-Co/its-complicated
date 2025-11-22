@@ -5,27 +5,23 @@ import (
 	"net/http"
 	"strconv"
 
-	"main/internal/models"
-
 	"github.com/gin-gonic/gin"
+
+	"main/internal/models"
+	"main/internal/pg"
+)
+
+var (
+	ErrPostNotFound = errors.New("post not found")
+	ErrAlreadyLiked = errors.New("already liked")
+	ErrNotLiked     = errors.New("not liked")
 )
 
 // Handler handles HTTP requests for profile posts
-type Handler struct {
-	repo *Repository
-}
-
-// NewHandler creates a new profile handler
-func NewHandler(repo *Repository) *Handler {
-	return &Handler{
-		repo: repo,
-	}
-}
-
 // CreatePost creates a new post
 // POST /api/profile/posts
 // Требует авторизацию (userID в контексте)
-func (h *Handler) CreatePost(c *gin.Context) {
+func CreatePost(c *gin.Context) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -51,7 +47,7 @@ func (h *Handler) CreatePost(c *gin.Context) {
 		AuthorID:    userID.(int64),
 	}
 
-	if err := h.repo.CreatePost(c.Request.Context(), post); err != nil {
+	if err := pg.CreatePost(c.Request.Context(), post); err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{"error": "failed to create post"},
@@ -67,7 +63,7 @@ func (h *Handler) CreatePost(c *gin.Context) {
 
 // GetUserPosts retrieves all posts for a user
 // GET /api/profile/:userID/posts?limit=20&offset=40
-func (h *Handler) GetUserPosts(c *gin.Context) {
+func GetUserPosts(c *gin.Context) {
 	userIDParam := c.Param("userID")
 	userID, err := strconv.ParseInt(userIDParam, 10, 64)
 	if err != nil {
@@ -91,7 +87,7 @@ func (h *Handler) GetUserPosts(c *gin.Context) {
 		}
 	}
 
-	posts, total, err := h.repo.GetUserPosts(
+	posts, total, err := pg.GetUserPosts(
 		c.Request.Context(),
 		userID,
 		limit,
@@ -115,7 +111,7 @@ func (h *Handler) GetUserPosts(c *gin.Context) {
 
 // GetPost retrieves a single post
 // GET /api/profile/posts/:postID
-func (h *Handler) GetPost(c *gin.Context) {
+func GetPost(c *gin.Context) {
 	postIDParam := c.Param("postID")
 	postID, err := strconv.ParseInt(postIDParam, 10, 64)
 	if err != nil {
@@ -123,7 +119,7 @@ func (h *Handler) GetPost(c *gin.Context) {
 		return
 	}
 
-	post, err := h.repo.GetPostByID(c.Request.Context(), postID)
+	post, err := pg.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
 		if errors.Is(err, ErrPostNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
@@ -142,7 +138,7 @@ func (h *Handler) GetPost(c *gin.Context) {
 // UpdatePost updates a post
 // PUT /api/profile/posts/:postID
 // Требует авторизацию + проверку владельца
-func (h *Handler) UpdatePost(c *gin.Context) {
+func UpdatePost(c *gin.Context) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -156,7 +152,7 @@ func (h *Handler) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	post, err := h.repo.GetPostByID(c.Request.Context(), postID)
+	post, err := pg.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
 		if errors.Is(err, ErrPostNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
@@ -200,7 +196,7 @@ func (h *Handler) UpdatePost(c *gin.Context) {
 		post.PicURL = req.PicURL
 	}
 
-	if err := h.repo.UpdatePost(c.Request.Context(), post); err != nil {
+	if err := pg.UpdatePost(c.Request.Context(), post); err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{"error": "failed to update post"},
@@ -217,7 +213,7 @@ func (h *Handler) UpdatePost(c *gin.Context) {
 // DeletePost deletes a post
 // DELETE /api/profile/posts/:postID
 // Требует авторизацию + проверку владельца
-func (h *Handler) DeletePost(c *gin.Context) {
+func DeletePost(c *gin.Context) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -231,7 +227,7 @@ func (h *Handler) DeletePost(c *gin.Context) {
 		return
 	}
 
-	post, err := h.repo.GetPostByID(c.Request.Context(), postID)
+	post, err := pg.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
 		if errors.Is(err, ErrPostNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
@@ -253,7 +249,7 @@ func (h *Handler) DeletePost(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.DeletePost(c.Request.Context(), postID); err != nil {
+	if err := pg.DeletePost(c.Request.Context(), postID); err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{"error": "failed to delete post"},
@@ -267,7 +263,7 @@ func (h *Handler) DeletePost(c *gin.Context) {
 // LikePost adds a like to a post
 // POST /api/profile/posts/:postID/like
 // Требует авторизацию
-func (h *Handler) LikePost(c *gin.Context) {
+func LikePost(c *gin.Context) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -282,7 +278,7 @@ func (h *Handler) LikePost(c *gin.Context) {
 	}
 
 	// Проверяем существует ли пост
-	_, err = h.repo.GetPostByID(c.Request.Context(), postID)
+	_, err = pg.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
 		if errors.Is(err, ErrPostNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
@@ -295,7 +291,7 @@ func (h *Handler) LikePost(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.LikePost(c.Request.Context(), postID, userID.(int64)); err != nil {
+	if err := pg.LikePost(c.Request.Context(), postID, userID.(int64)); err != nil {
 		if errors.Is(err, ErrAlreadyLiked) {
 			c.JSON(
 				http.StatusConflict,
@@ -316,7 +312,7 @@ func (h *Handler) LikePost(c *gin.Context) {
 // UnlikePost removes a like from a post
 // DELETE /api/profile/posts/:postID/like
 // Требует авторизацию
-func (h *Handler) UnlikePost(c *gin.Context) {
+func UnlikePost(c *gin.Context) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -330,7 +326,7 @@ func (h *Handler) UnlikePost(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.UnlikePost(c.Request.Context(), postID, userID.(int64)); err != nil {
+	if err := pg.UnlikePost(c.Request.Context(), postID, userID.(int64)); err != nil {
 		if errors.Is(err, ErrNotLiked) {
 			c.JSON(
 				http.StatusNotFound,
@@ -346,18 +342,4 @@ func (h *Handler) UnlikePost(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "post unliked successfully"})
-}
-
-// RegisterRoutes registers all profile routes
-func RegisterRoutes(router *gin.Engine, handler *Handler) {
-	profileGroup := router.Group("/api/profile")
-	{
-		profileGroup.POST("/posts", handler.CreatePost)
-		profileGroup.GET("/:userID/posts", handler.GetUserPosts)
-		profileGroup.GET("/posts/:postID", handler.GetPost)
-		profileGroup.PUT("/posts/:postID", handler.UpdatePost)
-		profileGroup.DELETE("/posts/:postID", handler.DeletePost)
-		profileGroup.POST("/posts/:postID/like", handler.LikePost)
-		profileGroup.DELETE("/posts/:postID/like", handler.UnlikePost)
-	}
 }
