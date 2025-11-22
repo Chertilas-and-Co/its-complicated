@@ -104,41 +104,46 @@ func main() {
 	r.POST("/auth", func(c *gin.Context) {
 		users.AuthorizeUser(c, sessionManager)
 	})
-	r.GET("/communities/:id/subscribers", pg.GetCommunitySubscribers)
-	r.GET("/community/:id", pg.GetCommunityByID)
-	r.GET("/communities", pg.GetAllCommunities)
 
-	r.GET("/profile/:userID/posts", profile.GetUserPosts)
-	r.GET("/profile/posts/:postID", profile.GetPost)
+	r.GET("/community", pg.InsertCommunityInDB)
+	r.GET("/community/:id/subscribers", pg.GetCommunitySubscribers)
+	r.GET("/community/:id", pg.GetCommunityByID)
+
+	r.GET("/user/:userID/posts", profile.GetUserPosts)
+	r.GET("/user/posts/:postID", profile.GetPost)
 
 	r.GET("/community/:id/posts", community.GetUserPosts)
-	r.GET("/community/posts/:postID", community.GetPost)
+	r.GET("/community/:id/posts/:postID", community.GetPost)
 
 	r.GET("/graph-data", pg.GetGraphData)
 
 	r.GET("/community/:id/posts/:postID/comments?limit=20&offset=0", comments.GetCommentsByPostID)
-	r.GET("/profile/posts/:postID/comments?limit=20&offset=0", comments.GetCommentsByPostID)
+	r.GET("/user/posts/:postID/comments?limit=20&offset=0", comments.GetCommentsByPostID)
 	r.GET("/community/:id/posts/:postID/comments/:commentID", comments.GetComment)
-	r.GET("profile/posts/:postID/comments/:commentID", comments.GetComment)
+	r.GET("user/posts/:postID/comments/:commentID", comments.GetComment)
 
 	// Protected routes
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware(sessionManager))
 	{
+		api.GET("/user", pg.GetUserProfile)
+		api.PUT("/user", pg.UpdateProfile)
+		api.GET("/user/search?query=john", pg.SearchUsers)
+
 		api.POST("/community/:id/posts/:postID/comments", comments.CreateComment)
-		api.POST("/profile/posts/:postID/comments", comments.CreateComment)
+		api.POST("/user/posts/:postID/comments", comments.CreateComment)
 		api.PUT("/community/:id/posts/:postID/comments/:commentID", comments.UpdateComment)
-		api.PUT("/profile/posts/:postID/comments/:commentID", comments.UpdateComment)
+		api.PUT("/user/posts/:postID/comments/:commentID", comments.UpdateComment)
 		api.DELETE("/community/:id/posts/:postID/comments/:commentID", comments.DeleteComment)
-		api.DELETE("/profile/posts/:postID/comments/:commentID", comments.DeleteComment)
+		api.DELETE("/user/posts/:postID/comments/:commentID", comments.DeleteComment)
 
 		api.GET("/users", users.GetAllUsers)
 
-		api.POST("/profile/posts", profile.CreatePost)
-		api.PUT("/profile/posts/:postID", profile.UpdatePost)
-		api.DELETE("/profile/posts/:postID", profile.DeletePost)
-		api.POST("/profile/posts/:postID/like", profile.LikePost)
-		api.DELETE("/profile/posts/:postID/like", profile.UnlikePost)
+		api.POST("/user/posts", profile.CreatePost)
+		api.PUT("/user/posts/:postID", profile.UpdatePost)
+		api.DELETE("/user/posts/:postID", profile.DeletePost)
+		api.POST("/user/posts/:postID/like", profile.LikePost)
+		api.DELETE("/user/posts/:postID/like", profile.UnlikePost)
 
 		api.POST("/community/:id/posts", community.CreatePost)
 		api.PUT("/community/:id/posts/:postID", community.UpdatePost)
