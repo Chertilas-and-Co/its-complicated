@@ -199,24 +199,34 @@ func GetAllCommunities(c *gin.Context) {
 	c.JSON(http.StatusOK, communities)
 }
 
-type GraphNode struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
-	Size int    `json:"size"`
+// DenormalizedLink is the response structure the frontend expects.
+type DenormalizedLink struct {
+	ID1               int64  `json:"id_1"`
+	ID2               int64  `json:"id_2"`
+	Subscribers1      int    `json:"subscribers_1"`
+	Subscribers2      int    `json:"subscribers_2"`
+	CommonSubscribers int    `json:"common_subscribers"`
+	Name1             string `json:"name_1"`
+	Desc1             string `json:"desc_1"`
+	Name2             string `json:"name_2"`
+	Desc2             string `json:"desc_2"`
 }
 
-type GraphLink struct {
-	Source int64 `json:"source"`
-	Target int64 `json:"target"`
-	Value  int   `json:"value"`
+// Internal structs for fetching data from DB
+type graphNode struct {
+	ID   int64
+	Name string
+	Size int
 }
 
-type GraphDataResponse struct {
-	Nodes []GraphNode `json:"nodes"`
-	Links []GraphLink `json:"links"`
+type graphLink struct {
+	Source int64
+	Target int64
+	Value  int
 }
 
 func GetGraphData(c *gin.Context) {
+	// 1. Get all nodes (communities and their sizes)
 	nodesQuery := `
 		SELECT c.id, c.name, COUNT(s.user_id) as size
 		FROM communities c
@@ -226,68 +236,99 @@ func GetGraphData(c *gin.Context) {
 	rows, err := DB.Query(nodesQuery)
 	if err != nil {
 		log.Printf("Error querying graph nodes: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch community data"})
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Failed to fetch community data"},
+		)
 		return
 	}
 	defer rows.Close()
 
-	var nodes []GraphNode
+	nodeMap := make(map[int64]graphNode)
 	for rows.Next() {
-		var node GraphNode
+		var node graphNode
 		if err := rows.Scan(&node.ID, &node.Name, &node.Size); err != nil {
 			log.Printf("Error scanning graph node: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process community data"})
+			c.JSON(
+				http.StatusInternalServerError,
+				gin.H{"error": "Failed to process community data"},
+			)
 			return
 		}
-		nodes = append(nodes, node)
+		nodeMap[node.ID] = node
 	}
 	if err = rows.Err(); err != nil {
 		log.Printf("Error iterating graph nodes: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process community data"})
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Failed to process community data"},
+		)
 		return
 	}
 
+	// 2. Get all links (intersections)
 	linksQuery := `
-		SELECT
-			s1.community_id as source,
-			s2.community_id as target,
-			COUNT(s1.user_id) AS value
-		FROM
-			community_subscriptions s1
-		JOIN
-			community_subscriptions s2 ON s1.user_id = s2.user_id AND s1.community_id < s2.community_id
-		GROUP BY
-			s1.community_id, s2.community_id
-		HAVING
-			COUNT(s1.user_id) > 0;`
+		SELECT s1.community_id as source, s2.community_id as target, COUNT(s1.user_id) AS value
+		FROM community_subscriptions s1
+		JOIN community_subscriptions s2 ON s1.user_id = s2.user_id AND s1.community_id < s2.community_id
+		GROUP BY s1.community_id, s2.community_id
+		HAVING COUNT(s1.user_id) > 0;`
 
 	rows, err = DB.Query(linksQuery)
 	if err != nil {
 		log.Printf("Error querying graph links: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch community links"})
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Failed to fetch community links"},
+		)
 		return
 	}
 	defer rows.Close()
 
-	var links []GraphLink
+	var links []graphLink
 	for rows.Next() {
-		var link GraphLink
+		var link graphLink
 		if err := rows.Scan(&link.Source, &link.Target, &link.Value); err != nil {
 			log.Printf("Error scanning graph link: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process community links"})
+			c.JSON(
+				http.StatusInternalServerError,
+				gin.H{"error": "Failed to process community links"},
+			)
 			return
 		}
 		links = append(links, link)
 	}
 	if err = rows.Err(); err != nil {
 		log.Printf("Error iterating graph links: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process community links"})
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Failed to process community links"},
+		)
 		return
 	}
 
-	response := GraphDataResponse{
-		Nodes: nodes,
-		Links: links,
+	// 3. Transform data into the flat format the frontend expects
+	var response []DenormalizedLink
+	for _, link := range links {
+		sourceNode := nodeMap[link.Source]
+		targetNode := nodeMap[link.Target]
+
+		denormalized := DenormalizedLink{
+			ID1:               sourceNode.ID,
+			ID2:               targetNode.ID,
+			Subscribers1:      sourceNode.Size,
+			Subscribers2:      targetNode.Size,
+			CommonSubscribers: link.Value,
+			Name1:             sourceNode.Name,
+			Desc1:             "Участников: " + strconv.Itoa(sourceNode.Size),
+			Name2:             targetNode.Name,
+			Desc2:             "Участников: " + strconv.Itoa(targetNode.Size),
+		}
+		response = append(response, denormalized)
+	}
+
+	if response == nil {
+		response = make([]DenormalizedLink, 0)
 	}
 
 	c.JSON(http.StatusOK, response)
