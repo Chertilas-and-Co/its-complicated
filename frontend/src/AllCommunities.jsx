@@ -40,6 +40,7 @@ function Search() {
   );
 }
 
+
 function Sidebar({ title, children }) {
   return (
     <div style={{
@@ -121,7 +122,7 @@ function CommunityCard({ community }) {
         color: 'black'
       }}
     >
-      {/* Верхняя часть: аватар и базовая информация */}
+
       <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
         <img
           src={community.avatar}
@@ -139,6 +140,7 @@ function CommunityCard({ community }) {
             <p style={{ margin: 0, color: '#444' }}>{community.description}</p>
           )}
         </div>
+        
       </div>
 
       {/* Нижняя строка*/}
@@ -238,7 +240,21 @@ function CommunitiesPage() {
           }}>
             {pageTitle}
           </div>
-          <div style={{ flex: 1, maxWidth: '340px' }}></div>
+         <div style={{ flex: 1, maxWidth: '340px' , alignItems: 'center'}}><button style={{
+              background: '#222',
+              width: '200px',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '7px 18px',
+              fontSize: '15px',
+              cursor: 'pointer',
+              outline: 'none',
+              margin: '0 auto',
+              display: 'block'
+            }}>
+              Создать сообщество
+            </button></div>
         </div>
 
         <div style={{

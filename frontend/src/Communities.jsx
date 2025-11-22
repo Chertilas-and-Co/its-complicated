@@ -40,6 +40,27 @@ function Search() {
   );
 }
 
+function ButtonDiscussion(){
+  return(
+        <a href="/discussion">
+            <button  style={{
+          background: '#222',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '8px',
+          padding: '7px 18px',
+          fontSize: '15px',
+          cursor: 'pointer',
+          outline: 'none',
+          margin: '0 auto',
+          display: 'block'
+        }}>
+            Обсудить
+            </button>
+            </a>
+    ); 
+}
+
 function Sidebar({ title, children }) {
   return (
     <div style={{
@@ -129,20 +150,7 @@ function PostsList({ posts }) {
             width: '100%'
           }}>
             <div style={{ flex: 1 }}>{post.author}</div>
-            <button style={{
-              background: '#222',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '7px 18px',
-              fontSize: '15px',
-              cursor: 'pointer',
-              outline: 'none',
-              margin: '0 auto',
-              display: 'block'
-            }}>
-              Обсудить
-            </button>
+            <ButtonDiscussion/>
             <div style={{
               flex: 1,
               textAlign: 'right',
