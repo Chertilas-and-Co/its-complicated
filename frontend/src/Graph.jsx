@@ -7,69 +7,68 @@ const NODE_RELSIZE = IMAGE_SIZE;
 const FORCE_MANYBODIES_STRENGTH = -(IMAGE_SIZE * 4);
 const FORCE_COLLIDE_RADIUS = NODE_RELSIZE * 0.5;
 
-const dataFromBackend = [
-    { id_1: 0, id_2: 1, subscribers_1: 20, subscribers_2: 20, common_subscribers: 20, name_1: "Node 0", desc_1: "Описание узла 0", name_2: "Node 1", desc_2: "Описание узла 1" },
-    { id_1: 0, id_2: 2, subscribers_1: 100, subscribers_2: 30, common_subscribers: 1, name_1: "Node 0", desc_1: "Описание узла 0", name_2: "Node 2", desc_2: "Описание узла 2" },
-    { id_1: 2, id_2: 3, subscribers_1: 100, subscribers_2: 20, common_subscribers: 10, name_1: "Node 2", desc_1: "Описание узла 2", name_2: "Node 3", desc_2: "Описание узла 3" },
-    { id_1: 3, id_2: 4, subscribers_1: 40, subscribers_2: 20, common_subscribers: 14, name_1: "Node 3", desc_1: "Описание узла 3", name_2: "Node 4", desc_2: "Описание узла 4" },
-];
-
-// Формируем узлы
-const nodeMap = {};
-dataFromBackend.forEach(({ id_1, id_2, name_1, desc_1, name_2, desc_2 }) => {
-    if (!nodeMap[id_1]) nodeMap[id_1] = { id: id_1, name: name_1, description: desc_1, connections: 0 };
-    if (!nodeMap[id_2]) nodeMap[id_2] = { id: id_2, name: name_2, description: desc_2, connections: 0 };
-    nodeMap[id_1].connections++;
-    nodeMap[id_2].connections++;
-});
-
-// Считаем totalK для масштабирования узлов (здесь вместо totalK можно использовать connections)
-Object.values(nodeMap).forEach(node => {
-    let totalK = 0;
-    dataFromBackend.forEach(({ id_1, id_2 }) => {
-        if (id_1 === node.id || id_2 === node.id) totalK++;
-    });
-    node.totalK = totalK;
-});
-
-const uniqueNodes = Object.values(nodeMap);
-
-// Функция масштабирования размера узлов
-const scaleSize = (k) => {
-    const minSize = 10;
-    const maxSize = 40;
-    return Math.min(maxSize, minSize + k * 5);
-};
-
-const nodes = uniqueNodes.map(node => ({
-    id: node.id,
-    name: node.name,
-    description: node.description,
-    size: scaleSize(node.totalK),
-    totalK: node.totalK,
-}));
-
-// Параметры для расстояния ребер
-const BASE_DISTANCE = 1000;
-const ALPHA = 10;
-
-const links = dataFromBackend.map(({ id_1, id_2, subscribers_1, subscribers_2, common_subscribers }) => {
-    const subscribers_sum = subscribers_1 + subscribers_2;
-    const common_ratio = subscribers_sum > 0 ? common_subscribers / subscribers_sum : 0;
-    const distance = BASE_DISTANCE / (1 + ALPHA * common_ratio); // расстояние зависит от общего числа подписчиков
-    return {
-        source: id_1,
-        target: id_2,
-        color: "#000",
-        distance,
-    };
-});
-
-const graphData = { nodes, links };
-
 function ForceGraph() {
     const graphRef = useRef(null);
     const [hoverNode, setHoverNode] = useState(null);
+    const [graphData, setGraphData] = useState({ nodes: [], links: [] });
+
+    useEffect(() => {
+        fetch('http://localhost:8080/graph-data')
+            .then(res => res.json())
+            .then(dataFromBackend => {
+                // Формируем узлы
+                const nodeMap = {};
+                dataFromBackend.forEach(({ id_1, id_2, name_1, desc_1, name_2, desc_2 }) => {
+                    if (!nodeMap[id_1]) nodeMap[id_1] = { id: id_1, name: name_1, description: desc_1, connections: 0 };
+                    if (!nodeMap[id_2]) nodeMap[id_2] = { id: id_2, name: name_2, description: desc_2, connections: 0 };
+                    nodeMap[id_1].connections++;
+                    nodeMap[id_2].connections++;
+                });
+
+                // Считаем totalK для масштабирования узлов
+                Object.values(nodeMap).forEach(node => {
+                    let totalK = 0;
+                    dataFromBackend.forEach(({ id_1, id_2 }) => {
+                        if (id_1 === node.id || id_2 === node.id) totalK++;
+                    });
+                    node.totalK = totalK;
+                });
+
+                const uniqueNodes = Object.values(nodeMap);
+
+                const scaleSize = (k) => {
+                    const minSize = 10;
+                    const maxSize = 40;
+                    return Math.min(maxSize, minSize + k * 5);
+                };
+
+                const nodes = uniqueNodes.map(node => ({
+                    id: node.id,
+                    name: node.name,
+                    description: node.description,
+                    size: scaleSize(node.totalK),
+                    totalK: node.totalK,
+                }));
+
+                const BASE_DISTANCE = 1000;
+                const ALPHA = 10;
+
+                const links = dataFromBackend.map(({ id_1, id_2, subscribers_1, subscribers_2, common_subscribers }) => {
+                    const subscribers_sum = subscribers_1 + subscribers_2;
+                    const common_ratio = subscribers_sum > 0 ? common_subscribers / subscribers_sum : 0;
+                    const distance = BASE_DISTANCE / (1 + ALPHA * common_ratio);
+                    return {
+                        source: id_1,
+                        target: id_2,
+                        color: "#000",
+                        distance,
+                    };
+                });
+
+                // Update the component's state with the new data
+                setGraphData({ nodes, links });
+            });
+    }, []); // Empty array [] ensures this runs once on mount
 
     useEffect(() => {
         if (graphRef.current) {
@@ -88,7 +87,7 @@ function ForceGraph() {
             graphRef.current.d3Force("center", null);
             graphRef.current.d3ReheatSimulation();
         }
-    }, []);
+    }, [graphData]);
 
     const handleNodeDragStart = (node) => {
         if (!node) return;
