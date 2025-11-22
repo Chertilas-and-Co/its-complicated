@@ -15,7 +15,7 @@ import (
 )
 
 type RegisterRequest struct {
-	Username string `json:"username"`
+	Login    string `json:"login"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -43,16 +43,17 @@ func RegisterUser(c *gin.Context) {
 		return
 	}
 
-	if req.Username == "" || req.Password == "" || req.Email == "" {
+	if req.Login == "" || req.Password == "" || req.Email == "" {
 		c.JSON(
 			http.StatusBadRequest,
 			gin.H{"error": "Username, email, and password are required"},
 		)
+		println("asdad")
 		return
 	}
 
 	var exists bool
-	err := pg.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 OR email = $2)", req.Username, req.Email).
+	err := pg.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 OR email = $2)", req.Login, req.Email).
 		Scan(&exists)
 	if err != nil {
 		zap.S().Errorw("Failed to check if user exists", "error", err)
@@ -61,7 +62,7 @@ func RegisterUser(c *gin.Context) {
 	}
 	if exists {
 		zap.S().
-			Warnw("Register: user or email already exists", "username", req.Username, "email", req.Email)
+			Warnw("Register: user or email already exists", "username", req.Login, "email", req.Email)
 		c.JSON(
 			http.StatusConflict,
 			gin.H{"error": "User with this username or email already exists"},
@@ -72,7 +73,7 @@ func RegisterUser(c *gin.Context) {
 	salt, _ := password.GenerateSalt(32)
 	hash := password.HashPassword(req.Password, salt)
 
-	err = pg.InsertInDB(req.Username, req.Email, hash, salt)
+	err = pg.InsertInDB(req.Login, req.Email, hash, salt)
 	if err != nil {
 		zap.S().Errorw("Register: failed to insert user", "error", err)
 		c.JSON(
@@ -82,7 +83,7 @@ func RegisterUser(c *gin.Context) {
 		return
 	}
 
-	zap.S().Infow("Register: insertion successful!", "username", req.Username)
+	zap.S().Infow("Register: insertion successful!", "username", req.Login)
 	c.JSON(http.StatusCreated, gin.H{"message": "User created successfully"})
 }
 
@@ -182,4 +183,3 @@ func GetAllUsers(c *gin.Context) {
 
 	c.JSON(http.StatusOK, users)
 }
-
