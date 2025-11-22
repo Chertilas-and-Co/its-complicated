@@ -17,7 +17,7 @@ import (
 	"main/internal/auth/users"
 	"main/internal/middleware"
 	"main/internal/pg"
-	"main/internal/profile"
+	profile "main/internal/profile/posts"
 )
 
 var (
