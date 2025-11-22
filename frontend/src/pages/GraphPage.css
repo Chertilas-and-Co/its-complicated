@@ -1,7 +1,5 @@
 .graph-page-container {
-    max-width: 1200px;
     margin: 2rem auto; /* Add top and bottom margin */
-    padding: 40px;
     background-color: #ffffff; /* White background for the "card" */
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); /* Soft shadow */
@@ -20,6 +18,5 @@
     border: 1px solid #eef2f7; /* Very light border */
     border-radius: 8px;
     overflow: hidden;
-    height: 600px; /* Set a fixed height */
     position: relative; /* For positioning extra elements */
 }

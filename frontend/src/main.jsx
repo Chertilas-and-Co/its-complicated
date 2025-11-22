@@ -2,8 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import Navbar from './Navbar.jsx'
 // Import global styles and the main App layout component
-import './index.css';
+// import './index.css';
 import App from './App.jsx';
 
 // Your page components
@@ -23,21 +24,19 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <BrowserRouter>
             <Routes>
                 {/* All routes are now children of App to get the Navbar and common layout */}
-                <Route path="/" element={<App />}>
-                    {/* The index route is now the graph */}
-                    <Route index element={<GraphPage />} /> 
-                    <Route path="communities" element={<CommunitiesPage />} />
-                    <Route path="graph" element={<GraphPage />} />
-                    <Route path="auth" element={<SignIn />} />
-                    <Route path="register" element={<Register />} />
-                    <Route path="user" element={<UserPage />} />
-                    <Route path="friends" element={<Friends />} />
-                    <Route path="create_post" element={<CreatePostPage/>}/>
-                    <Route path="discussion" element={<DiscussionPage />} />
-                    <Route path="create_community" element={<CreateCommunityPage />} />
-                    {/* The route for a single community we added earlier */}
-                    <Route path="community/:id" element={<CommunityPage />} />
-                </Route>
+                {/* Отдельные маршруты без App */}
+                <Route path="auth" element={<SignIn />} />
+                <Route path="register" element={<Register />} />
+                {/* Все остальные маршруты внутри App */}
+                <Route index element={<GraphPage />} />
+                <Route path="communities" element={<CommunitiesPage />} />
+                <Route path="graph" element={<GraphPage />} />
+                <Route path="user" element={<UserPage />} />
+                <Route path="friends" element={<Friends />} />
+                <Route path="create_post" element={<CreatePostPage />} />
+                <Route path="discussion" element={<DiscussionPage />} />
+                <Route path="create_community" element={<CreateCommunityPage />} />
+                <Route path="community/:id" element={<CommunityPage />} />
             </Routes>
         </BrowserRouter>
     </React.StrictMode>

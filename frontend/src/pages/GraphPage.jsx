@@ -1,15 +1,19 @@
 import React from 'react';
-import ForceGraph from '../Graph'; // Importing the graph component
-import './GraphPage.css'; // Import the new styles
+import ForceGraph from '../Graph';
+import './GraphPage.css';
+import Navbar from '../Navbar';
 
 function GraphPage() {
     return (
-        <div className="graph-page-container">
-            <h1 className="graph-title">Карта Сообществ</h1>
-            <div className="graph-wrapper">
-                <ForceGraph />
+        <>
+            <Navbar />
+            <div className="graph-page-container">
+                <h1 className="graph-title">Карта Сообществ</h1>
+                <div className="graph-wrapper">
+                    <ForceGraph />
+                </div>
             </div>
-        </div>
+        </>
     );
 }
 
