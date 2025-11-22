@@ -111,6 +111,8 @@ func main() {
 	r.GET("/community/:userID/posts", community.GetUserPosts)
 	r.GET("/community/posts/:postID", community.GetPost)
 
+	r.GET("/graph-data", pg.GetGraphData)
+
 	// Protected routes
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware(sessionManager))
