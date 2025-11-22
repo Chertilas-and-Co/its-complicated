@@ -6,19 +6,17 @@ const Navbar = () => {
   return (
     <nav className="navbar" style={{fontFamily: 'Arial, sans-serif'}}>
       <div className="navbar-left">
-        <Link to="/" className="logo">Страдать</Link>
+        <a href="/" className="logo">Страдать</a>
       </div>
       <div className="navbar-center">
         <ul className="nav-links">
-          <li><Link to="/user">Профиль</Link></li>
-          <li><Link to="/">Сообщества</Link></li>
-          <li><Link to="/friends">Друзья</Link></li>
+          <li><a href="/user">Профиль</a></li>
+          <li><a href="/communities">Сообщества</a></li>
+          <li><a href="/friends">Друзья</a></li>
         </ul>
       </div>
       <div className="navbar-right">
-        {/* This should probably be a button that triggers a logout function, 
-            but for now it links to the login page. */}
-        <Link to="/login" className="exit">Выйти</Link>
+        <a href="/reg" className="exit">Выйти</a>
       </div>
     </nav>
   );
