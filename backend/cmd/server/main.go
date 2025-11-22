@@ -106,6 +106,7 @@ func main() {
 
 	r.GET("/:userID/posts", profile.GetUserPosts)
 	r.GET("/posts/:postID", profile.GetPost)
+	r.GET("/graph-data", pg.GetGraphData)
 
 	// Protected routes
 	api := r.Group("/api")
