@@ -131,6 +131,28 @@ function ButtonDiscussion(){
     ); 
 }
 
+function ButtonAddPost(){
+  return(
+        <a href="/create_post">
+            <button  style={{
+          background: '#222',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '8px',
+          padding: '7px 18px',
+          fontSize: '15px',
+          cursor: 'pointer',
+          marginBottom: '20px',
+          outline: 'none',
+          margin: '0 auto',
+          display: 'block'
+        }}>
+            Создать пост
+            </button>
+            </a>
+    ); 
+}
+
 //кнопка, которая появляется только если человек не является нынешним пользователем
 function ButtonFriend({ isFriend, isCurrentUser }) {
   if (isCurrentUser) return null;
@@ -300,9 +322,11 @@ function UserPage() {
             textAlign: 'center'
           }}>{user.description}</p>
 
+          
+
            <ButtonFriend isFriend={isFriend} isCurrentUser={isCurrentUser} />
 
-
+          <ButtonAddPost/>
           <PostsList posts={posts} />
         </div>
 
