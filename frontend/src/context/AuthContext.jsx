@@ -1,26 +1,41 @@
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    // Initialize user from localStorage
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+
+  // Effect to update localStorage when user state changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("user");
+    }
+  }, [user]);
 
   const login = async (credentials) => {
-    const response = await fetch("http://localhost:8080/auth", {
+    const response = await fetch("/auth", { // Changed to relative path
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
     });
 
     if (response.ok) {
-      setUser({ username: credentials.login }); // In a real app, you'd get user data from the API
+      const data = await response.json();
+      // Assuming the backend now returns user data like { id: ..., username: ... }
+      setUser(data.user);
       return true;
     }
     return false;
   };
 
   const register = async (credentials) => {
-    const response = await fetch("http://localhost:8080/register", {
+    const response = await fetch("/register", { // Changed to relative path
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -32,6 +47,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem("user"); // This is now handled by the useEffect
     // Here you would also call an API to invalidate the session/token
   };
 

@@ -16,6 +16,7 @@ import (
 
 	"main/internal/auth/users"
 	"main/internal/comments"
+	"main/internal/communities"
 	community "main/internal/community/posts"
 	"main/internal/middleware"
 	"main/internal/pg"
@@ -27,6 +28,14 @@ var (
 	sessionManager *scs.SessionManager
 	redisPool      *redis.Pool
 )
+
+func CreateCommunityHandlerWrapper(
+	sm *scs.SessionManager,
+) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		communities.CreateCommunityHandler(c, sm)
+	}
+}
 
 func initLogger() {
 	logger, _ := zap.NewDevelopment()
@@ -61,7 +70,8 @@ func main() {
 	sessionManager.Cookie.HttpOnly = true
 	sessionManager.Cookie.Persist = true
 	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
-	sessionManager.Cookie.Secure = false // Set to true in production with HTTPS
+	sessionManager.Cookie.Secure = false
+	// Removed explicit Domain and Path settings
 
 	connStr := os.Getenv("DATABASE_URL")
 	if connStr == "" {
@@ -105,9 +115,9 @@ func main() {
 		users.AuthorizeUser(c, sessionManager)
 	})
 
-	r.GET("/community", pg.InsertCommunityInDB)
 	r.GET("/community/:id/subscribers", pg.GetCommunitySubscribers)
 	r.GET("/community/:id", pg.GetCommunityByID)
+	r.GET("/communities", pg.GetAllCommunities) // Added route to get all communities
 
 	r.GET("/user/:userID/posts", profile.GetUserPosts)
 	r.GET("/user/posts/:postID", profile.GetPost)
@@ -129,6 +139,9 @@ func main() {
 		api.GET("/user", pg.GetUserProfile)
 		api.PUT("/user", pg.UpdateProfile)
 		api.GET("/user/search?query=john", pg.SearchUsers)
+
+		// New route for creating communities
+		api.POST("/communities", CreateCommunityHandlerWrapper(sessionManager))
 
 		api.POST("/community/:id/posts/:postID/comments", comments.CreateComment)
 		api.POST("/user/posts/:postID/comments", comments.CreateComment)

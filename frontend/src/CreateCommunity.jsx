@@ -26,7 +26,7 @@ const CreateCommunityPage = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:8080/api/communities", {
+      const response = await fetch("/api/communities", { // Changed to relative path
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -36,13 +36,19 @@ const CreateCommunityPage = () => {
       });
 
       const data = await response.json();
+      console.log("Community creation response data:", data); // Added log
 
       if (response.ok) {
         setMessage("Сообщество успешно создано!");
         setName("");
         setDescription("");
         // Перенаправляем на страницу нового сообщества
-        navigate(`/community/${data.id}`);
+        if (data.id) { // Ensure data.id exists before navigating
+          navigate(`/community/${data.id}`);
+        } else {
+          console.error("Community ID not found in response data:", data);
+          setMessage("Ошибка: ID нового сообщества не найден.");
+        }
       } else {
         setMessage(`Ошибка: ${data.error || "Не удалось создать сообщество"}`);
       }
