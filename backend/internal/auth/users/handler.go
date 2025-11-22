@@ -31,7 +31,7 @@ type User struct {
 }
 
 type UserData struct {
-	ID           int
+	ID           int64
 	PasswordHash string
 	Salt         string
 }
