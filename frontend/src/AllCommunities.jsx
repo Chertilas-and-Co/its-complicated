@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import communityAvatar from '/public/static/community.jpg';
+import communityAvatar from '/community.jpg';
 import Navbar from './Navbar';
 
 function Search() {
@@ -91,7 +91,7 @@ function CommunitiesListCompact({ communities }) {
                     alignItems: 'center'
                 }}>
                     <img
-                        src={"/static/community.jpg"}
+                        src={communityAvatar}
                         alt={community.name}
                         style={{
                             width: '36px',
@@ -125,7 +125,7 @@ function CommunityCard({ community }) {
             {/* Верхняя часть: аватар и базовая информация */}
             <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
                 <img
-                    src={"/static/community.jpg"}
+                    src={communityAvatar}
                     alt={community.name}
                     style={{
                         width: '72px',
@@ -219,7 +219,7 @@ function CommunitiesPage() {
                     justifyContent: 'space-between',
                     paddingBottom: '10px',
                 }}>
-                    {/* Your Search component here */}
+                    <Search />
                     <div style={{
                         flex: 2,
                         textAlign: 'center',
@@ -229,7 +229,21 @@ function CommunitiesPage() {
                     }}>
                         {pageTitle}
                     </div>
-                    <div style={{ flex: 1, maxWidth: '340px' }}></div>
+                    <div style={{ flex: 1, maxWidth: '340px', alignItems: 'center' }}><button style={{
+                        background: '#222',
+                        width: '200px',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '7px 18px',
+                        fontSize: '15px',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        margin: '0 auto',
+                        display: 'block'
+                    }}>
+                        Создать сообщество
+                    </button></div>
                 </div>
 
                 <div style={{
