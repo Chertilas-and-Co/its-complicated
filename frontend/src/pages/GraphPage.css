@@ -7,11 +7,12 @@
 
 .graph-title {
     text-align: center;
-    margin-bottom: 30px;
-    color: #2a3f5f; /* Softer than black */
+    color: #2a3f5f;
     font-size: 2.5em;
-    font-weight: 300; /* Light font weight */
+    font-weight: 300;
     letter-spacing: -1px;
+    margin: 10px auto 10px; /* Control top/bottom margin and center block */
+    padding: 0; /* Remove padding */
 }
 
 .graph-wrapper {
