@@ -82,9 +82,9 @@ function ButtonCreate() {
     );
 }
 
-function ButtonCommunity() {
+function ButtonCommunity({ community }) {
     return (
-        <a href="/community">
+        <a href={`/community/${community.id}`} >
             <button style={{
                 background: '#222',
                 color: '#fff',
@@ -99,7 +99,7 @@ function ButtonCommunity() {
             }}>
                 Перейти
             </button>
-        </a>
+        </a >
     );
 }
 
@@ -178,7 +178,7 @@ function CommunityCard({ community }) {
                     {community.membersCount ? `${community.membersCount} участников` : ''}
                 </div>
 
-                <ButtonCommunity />
+                <ButtonCommunity community={community} />
 
                 <div style={{
                     flex: 1,
@@ -255,7 +255,6 @@ function CommunitiesPage() {
                     </div>
                     <ButtonCreate />
                 </div>
-
                 <div style={{
                     display: 'flex',
                     flex: 1,
@@ -267,11 +266,12 @@ function CommunitiesPage() {
                         <p style={{ fontSize: '14px', lineHeight: '1.4', color: 'black' }}>
                             {description}
                         </p>
+
                     </Sidebar>
 
                     {/* Центр - список сообществ в карточках */}
                     <div style={{
-                        flexA: 1,
+                        flex: 1,
                         overflowY: 'auto',
                         scrollbarWidth: 'none',
                         msOverflowStyle: 'none',
