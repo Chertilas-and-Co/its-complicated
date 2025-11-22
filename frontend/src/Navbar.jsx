@@ -21,6 +21,7 @@ const Navbar = () => {
                 <ul className="nav-links">
                     <li><Link to="/user">Профиль</Link></li>
                     <li><Link to="/">Сообщества</Link></li>
+                    <li><Link to="/create_community">Создать сообщество</Link></li>
                     <li><Link to="/friends">Друзья</Link></li>
                 </ul>
             </div>
