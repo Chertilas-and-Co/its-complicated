@@ -12,7 +12,7 @@ import SignIn from "./SignIn";
 import ProtectedRoute from "./ProtectedRoute";
 import CommunityPage from "./Communities.jsx"
 import CommunitiesPage from "./AllCommunities.jsx"
-import ForceGraph from "./Graph.jsx"
+import GraphPage from "./pages/GraphPage.jsx";
 import UserPage from "./User.jsx";
 import Friends from "./Friends.jsx";
 import DiscussionPage from "./Discussion.jsx";
@@ -42,7 +42,7 @@ const AppRoutes = () => {
       />
         <Route path="/community/:id" element={<CommunityPage />} />
         <Route path="/communities" element={<CommunitiesPage />} />
-        <Route path="/graph" element={<ForceGraph />} />
+        <Route path="/graph" element={<GraphPage />} />
         <Route path="/user" element={<UserPage />} />
         <Route path="/friends" element={<Friends />} />
         <Route path="/create_post" element={<CreatePostPage/>}/>
