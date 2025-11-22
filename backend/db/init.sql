@@ -88,3 +88,5 @@ CREATE INDEX idx_community_subscriptions_both ON community_subscriptions(user_id
 
 CREATE INDEX idx_communities_created_by ON communities(created_by);
 
+INSERT INTO users (id, username, email, password_hash, salt) VALUES (1, 'aboba', 'aboba@mail.ru', 0x8, 0x9);
+INSERT INTO communities (name, description, is_private, created_by) VALUES ('aboba', 'asdasd', false, 1);
