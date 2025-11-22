@@ -108,7 +108,7 @@ func main() {
 	r.GET("/profile/:userID/posts", profile.GetUserPosts)
 	r.GET("/profile/posts/:postID", profile.GetPost)
 
-	r.GET("/community/:userID/posts", community.GetUserPosts)
+	r.GET("/community/:id/:userID/posts", community.GetUserPosts)
 	r.GET("/community/posts/:postID", community.GetPost)
 
 	r.GET("/graph-data", pg.GetGraphData)

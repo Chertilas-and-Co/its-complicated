@@ -70,7 +70,7 @@ func CreatePost(c *gin.Context) {
 // GetUserPosts retrieves all posts for a user
 // GET /api/profile/:userID/posts?limit=20&offset=40
 func GetUserPosts(c *gin.Context) {
-	userIDParam := c.Param("CommunityID")
+	userIDParam := c.Param("communityID")
 	userID, err := strconv.ParseInt(userIDParam, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
