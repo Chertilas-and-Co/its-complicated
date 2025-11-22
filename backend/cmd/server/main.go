@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"main/internal/auth/users"
+	"main/internal/communities"
 	"main/internal/middleware"
 	"main/internal/pg"
 	"main/internal/profile"
@@ -101,8 +102,8 @@ func main() {
 	r.POST("/auth", func(c *gin.Context) {
 		users.AuthorizeUser(c, sessionManager)
 	})
-	r.GET("/community/:id", pg.GetCommunityByID)
-	r.GET("/communities", pg.GetAllCommunities)
+	r.GET("/community/:id", communities.GetCommunityByID)
+	r.GET("/communities", communities.GetAllCommunities)
 
 	r.GET("/:userID/posts", profile.GetUserPosts)
 	r.GET("/posts/:postID", profile.GetPost)
