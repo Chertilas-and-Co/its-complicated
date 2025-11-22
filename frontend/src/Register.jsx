@@ -21,7 +21,7 @@ export default function Register() {
     const [login, setLogin] = useState("");
     const [message, setMessage] = useState("");
     const navigate = useNavigate();
-    const { register } = useAuth();
+    const { register, login: authLogin } = useAuth();
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -34,7 +34,12 @@ export default function Register() {
 
             if (response.ok) {
                 setMessage("Регистрация успешна!");
-                navigate('/login');
+                const success = await authLogin({ login, password });
+                if (success) {
+                    navigate('/');
+                } else {
+                    navigate('/login');
+                }
             } else {
                 const text = await response.text();
                 setMessage(`Ошибка: ${text}`);

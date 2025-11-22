@@ -36,7 +36,7 @@ export default function SignIn() {
       const success = await authLogin({ login, password });
       if (success) {
         setMessage("Авторизация успешна!");
-        navigate('/home');
+        navigate('/');
       } else {
         setMessage(`Ошибка: неверные учетные данные`);
       }

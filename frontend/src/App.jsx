@@ -26,29 +26,28 @@ const AppRoutes = () => {
     <Routes>
       <Route
         path="/login"
-        element={user ? <Navigate to="/home" /> : <SignIn />}
+        element={user ? <Navigate to="/" /> : <SignIn />}
       />
       <Route
         path="/register"
-        element={user ? <Navigate to="/home" /> : <Register />}
+        element={user ? <Navigate to="/" /> : <Register />}
       />
       <Route
-        path="/home"
+        path="/"
         element={
           <ProtectedRoute>
-            <Home onLogout={logout} />
+            <GraphPage />
           </ProtectedRoute>
         }
       />
         <Route path="/community/:id" element={<CommunityPage />} />
         <Route path="/communities" element={<CommunitiesPage />} />
-        <Route path="/graph" element={<GraphPage />} />
         <Route path="/user" element={<UserPage />} />
         <Route path="/friends" element={<Friends />} />
         <Route path="/create_post" element={<CreatePostPage/>}/>
         <Route path="/discussion" element={<DiscussionPage />} />
         <Route path="/create_community" element={<CreateCommunityPage />} />
-      <Route path="*" element={<Navigate to="/login" />} />
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 };

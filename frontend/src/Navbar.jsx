@@ -1,8 +1,17 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Navbar.css';
+import { useAuth } from './context/AuthContext';
 
 const Navbar = () => {
+    const { logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
+
     return (
         <nav className="navbar" style={{ fontFamily: 'Arial, sans-serif' }}>
             <div className="navbar-left">
@@ -16,12 +25,11 @@ const Navbar = () => {
                 </ul>
             </div>
             <div className="navbar-right">
-                {/* This should probably be a button that triggers a logout function, 
-            but for now it links to the login page. */}
-                <Link to="/auth" className="exit">Выйти</Link>
+                <button onClick={handleLogout} className="exit" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1em' }}>Выйти</button>
             </div>
         </nav>
     );
 };
 
 export default Navbar;
+
