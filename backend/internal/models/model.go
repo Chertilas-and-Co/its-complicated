@@ -50,7 +50,7 @@ type Post struct {
 	CommunityID int64     `json:"community_id"        db:"community_id"`
 	AuthorID    int64     `json:"author_id"           db:"author_id"`
 	CreatedAt   time.Time `json:"created_at"          db:"created_at"`
-	UpdatedAt   time.Time `json:"created_at"          db:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"          db:"updated_at"`
 	// Загружаемые отношения
 	Author    *User      `json:"author,omitempty"`
 	Community *Community `json:"community,omitempty"`
@@ -69,3 +69,13 @@ const (
 	FriendshipAccepted = "accepted"
 	FriendshipBlocked  = "blocked"
 )
+
+// Comment represents a comment on a post
+type Comment struct {
+	ID        int64     `json:"id"`
+	PostID    int64     `json:"post_id"`
+	UserID    int64     `json:"user_id"`
+	Username  string    `json:"username"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+}

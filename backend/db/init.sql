@@ -42,6 +42,15 @@ CREATE TABLE posts (
     updated_at TIMESTAMP NOT NULL
 );
 
+CREATE TABLE comments (
+    id BIGSERIAL PRIMARY KEY,
+    post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL,
+    username VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE post_likes (
     post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
     user_id BIGINT NOT NULL,
@@ -81,6 +90,10 @@ CREATE INDEX idx_post_likes_user_id ON post_likes(user_id);
 CREATE INDEX idx_posts_community_id ON posts(community_id);
 CREATE INDEX idx_posts_author_id ON posts(author_id);
 CREATE INDEX idx_posts_created_at ON posts(created_at DESC);
+
+CREATE INDEX idx_comments_post_id ON comments(post_id);
+CREATE INDEX idx_comments_user_id ON comments(user_id);
+CREATE INDEX idx_comments_created_at ON comments(created_at DESC);
 
 CREATE INDEX idx_community_subscriptions_user_id ON community_subscriptions(user_id);
 CREATE INDEX idx_community_subscriptions_community_id ON community_subscriptions(community_id);
