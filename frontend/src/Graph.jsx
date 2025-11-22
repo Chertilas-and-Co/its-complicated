@@ -1,22 +1,29 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import { forceCollide } from "d3-force";
 
-const IMAGE_SIZE = 24;
-const NODE_RELSIZE = IMAGE_SIZE;
-const FORCE_MANYBODIES_STRENGTH = -(IMAGE_SIZE * 4);
-const FORCE_COLLIDE_RADIUS = NODE_RELSIZE * 0.5;
+const NODE_RELSIZE = 10; // Base size of the node
+const FORCE_MANYBODIES_STRENGTH = -100;
+const FORCE_COLLIDE_RADIUS = NODE_RELSIZE * 1.5;
 
 function ForceGraph() {
     const graphRef = useRef(null);
-    const [hoverNode, setHoverNode] = useState(null);
     const [graphData, setGraphData] = useState({ nodes: [], links: [] });
+    const [hoverNode, setHoverNode] = useState(null);
+    const [highlightNodes, setHighlightNodes] = useState(new Set());
+    const [highlightLinks, setHighlightLinks] = useState(new Set());
+    const [communityImage, setCommunityImage] = useState(null);
+
+    useEffect(() => {
+        const img = new Image();
+        img.src = '/community.jpg';
+        img.onload = () => setCommunityImage(img);
+    }, []);
 
     useEffect(() => {
         fetch('http://localhost:8080/graph-data')
             .then(res => res.json())
             .then(dataFromBackend => {
-                // Формируем узлы
                 const nodeMap = {};
                 dataFromBackend.forEach(({ id_1, id_2, name_1, desc_1, name_2, desc_2 }) => {
                     if (!nodeMap[id_1]) nodeMap[id_1] = { id: id_1, name: name_1, description: desc_1, connections: 0 };
@@ -25,175 +32,157 @@ function ForceGraph() {
                     nodeMap[id_2].connections++;
                 });
 
-                // Считаем totalK для масштабирования узлов
-                Object.values(nodeMap).forEach(node => {
-                    let totalK = 0;
-                    dataFromBackend.forEach(({ id_1, id_2 }) => {
-                        if (id_1 === node.id || id_2 === node.id) totalK++;
-                    });
-                    node.totalK = totalK;
-                });
-
-                const uniqueNodes = Object.values(nodeMap);
-
-                const scaleSize = (k) => {
-                    const minSize = 10;
-                    const maxSize = 40;
-                    return Math.min(maxSize, minSize + k * 5);
+                const scaleSize = (connections) => {
+                    const minSize = 8;
+                    const maxSize = 30;
+                    return Math.min(maxSize, minSize + connections * 2);
                 };
 
-                const nodes = uniqueNodes.map(node => ({
-                    id: node.id,
-                    name: node.name,
-                    description: node.description,
-                    size: scaleSize(node.totalK),
-                    totalK: node.totalK,
+                const nodes = Object.values(nodeMap).map(node => ({
+                    ...node,
+                    size: scaleSize(node.connections),
                 }));
 
-                const BASE_DISTANCE = 1000;
-                const ALPHA = 10;
+                const links = dataFromBackend.map(({ id_1, id_2, common_subscribers }) => ({
+                    source: id_1,
+                    target: id_2,
+                    value: common_subscribers,
+                }));
 
-                const links = dataFromBackend.map(({ id_1, id_2, subscribers_1, subscribers_2, common_subscribers }) => {
-                    const subscribers_sum = subscribers_1 + subscribers_2;
-                    const common_ratio = subscribers_sum > 0 ? common_subscribers / subscribers_sum : 0;
-                    const distance = BASE_DISTANCE / (1 + ALPHA * common_ratio);
-                    return {
-                        source: id_1,
-                        target: id_2,
-                        color: "#000",
-                        distance,
-                    };
-                });
-
-                // Update the component's state with the new data
                 setGraphData({ nodes, links });
             });
-    }, []); // Empty array [] ensures this runs once on mount
+    }, []);
 
     useEffect(() => {
         if (graphRef.current) {
-            graphRef.current
-                .d3Force("link").distance(link => link.distance).iterations(1);
-
-            graphRef.current
-                .d3Force("charge")
-                .strength(node => -Math.abs(FORCE_MANYBODIES_STRENGTH) / (1 + node.totalK));
-
-            graphRef.current.d3Force(
-                "collide",
-                forceCollide(FORCE_COLLIDE_RADIUS).strength(0.1).iterations(1)
-            );
-
-            graphRef.current.d3Force("center", null);
-            graphRef.current.d3ReheatSimulation();
+            graphRef.current.d3Force("charge").strength(FORCE_MANYBODIES_STRENGTH);
+            graphRef.current.d3Force("collide", forceCollide(FORCE_COLLIDE_RADIUS));
+            graphRef.current.d3Force("link").distance(link => 150 / (1 + link.value * 0.1));
         }
     }, [graphData]);
 
-    const handleNodeDragStart = (node) => {
-        if (!node) return;
-        node.fx = node.x;
-        node.fy = node.y;
+    const handleNodeHover = (node) => {
+        setHoverNode(node);
+        if (node) {
+            const newHighlightNodes = new Set([node]);
+            const newHighlightLinks = new Set();
+            graphData.links.forEach(link => {
+                if (link.source.id === node.id || link.target.id === node.id) {
+                    newHighlightLinks.add(link);
+                    newHighlightNodes.add(link.source);
+                    newHighlightNodes.add(link.target);
+                }
+            });
+            setHighlightNodes(newHighlightNodes);
+            setHighlightLinks(newHighlightLinks);
+        } else {
+            setHighlightNodes(new Set());
+            setHighlightLinks(new Set());
+        }
     };
 
-    const handleNodeDrag = (node) => {
-        if (!node) return;
-        node.fx = node.x;
-        node.fy = node.y;
-    };
+    const nodeCanvasObject = useCallback((node, ctx, globalScale) => {
+        const size = node.size;
+        const isHighlighted = highlightNodes.size > 0 && !highlightNodes.has(node);
+        const opacity = isHighlighted ? 0.1 : 1;
 
-    const handleNodeDragEnd = (node) => {
-        if (!node) return;
-        node.fx = null;
-        node.fy = null;
-    };
+        ctx.globalAlpha = opacity;
+
+        // Glow effect
+        if (highlightNodes.has(node)) {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = 'rgba(74, 144, 226, 0.8)';
+        } else {
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+        }
+
+        // Draw image
+        if (communityImage) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, size / 2, 0, 2 * Math.PI, true);
+            ctx.clip();
+            ctx.drawImage(communityImage, node.x - size / 2, node.y - size / 2, size, size);
+            ctx.restore();
+        }
+
+        // Draw border
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, size / 2, 0, 2 * Math.PI, false);
+        ctx.strokeStyle = `rgba(74, 144, 226, ${opacity})`;
+        ctx.lineWidth = 1 / globalScale;
+        ctx.stroke();
+
+        // Reset shadow for text
+        ctx.shadowBlur = 0;
+
+        // Draw label
+        const label = node.name;
+        const fontSize = 12 / globalScale;
+        ctx.font = `bold ${fontSize}px Sans-Serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = `rgba(0, 0, 0, ${opacity})`;
+        ctx.fillText(label, node.x, node.y + size / 2 + fontSize * 0.9);
+        
+        ctx.globalAlpha = 1; // Reset alpha
+    }, [communityImage, highlightNodes]);
+
+    const linkCanvasObject = useCallback((link, ctx, globalScale) => {
+        const isHighlighted = highlightLinks.size > 0 && !highlightLinks.has(link);
+        const opacity = isHighlighted ? 0.05 : 0.5;
+
+        ctx.globalAlpha = opacity;
+        ctx.lineWidth = 1 / globalScale;
+        ctx.strokeStyle = 'grey';
+
+        ctx.beginPath();
+        ctx.moveTo(link.source.x, link.source.y);
+        ctx.lineTo(link.target.x, link.target.y);
+        ctx.stroke();
+        
+        ctx.globalAlpha = 1; // Reset alpha
+    }, [highlightLinks]);
 
     return (
-        <div style={{ position: "relative", height: 600, width: "100%" }}>
+        <div style={{ position: "relative", height: '80vh', width: "100%", background: '#f0f2f5', borderRadius: '8px' }}>
             <ForceGraph2D
                 ref={graphRef}
                 graphData={graphData}
-                nodeVal={(node) => node.size || IMAGE_SIZE}
-                linkCurvature="curvature"
-                linkColor="color"
-                linkWidth={2}
-                linkOpacity={1}
-                onNodeHover={(node) => setHoverNode(node)}
-                onNodeDragStart={handleNodeDragStart}
-                onNodeDrag={handleNodeDrag}
-                onNodeDragEnd={handleNodeDragEnd}
-                nodeCanvasObject={(node, ctx, globalScale) => {
-                    const radius = 12 / globalScale;
-                    const label = node.id.toString();
-                    const fontSize = 12 / globalScale;
-
-                    ctx.beginPath();
-                    ctx.fillStyle = "#1f78b4";
-                    ctx.strokeStyle = "#fff";
-                    ctx.lineWidth = 1 / globalScale;
-                    ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI, false);
-                    ctx.fill();
-                    ctx.stroke();
-
-                    ctx.fillStyle = "#fff";
-                    ctx.font = `${fontSize}px Sans-Serif`;
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText(label, node.x, node.y);
-
-                    ctx.fillStyle = "#000";
-                    ctx.font = `${fontSize}px Sans-Serif`;
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "bottom";
-                    ctx.fillText(node.name, node.x, node.y - radius - 4);
+                nodeVal="size"
+                nodeCanvasObject={nodeCanvasObject}
+                linkCanvasObject={linkCanvasObject}
+                linkWidth={0} // We draw links manually
+                onNodeHover={handleNodeHover}
+                onNodeDragEnd={node => {
+                    node.fx = node.x;
+                    node.fy = node.y;
                 }}
-                linkCanvasObjectMode={() => "replace"}
-                linkCanvasObject={(link, ctx, globalScale) => {
-                    if (typeof link.source === "string") return;
-
-                    const src = link.source;
-                    const tgt = link.target;
-
-                    const radius = 12 / globalScale;
-                    const dx = tgt.x - src.x;
-                    const dy = tgt.y - src.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
-                    const normX = dx / dist;
-                    const normY = dy / dist;
-
-                    const sourceX = src.x + normX * radius;
-                    const sourceY = src.y + normY * radius;
-                    const targetX = tgt.x - normX * radius;
-                    const targetY = tgt.y - normY * radius;
-
-                    ctx.beginPath();
-                    ctx.lineWidth = 2 / globalScale;
-                    ctx.strokeStyle = link.color || "#000";
-                    ctx.moveTo(sourceX, sourceY);
-                    ctx.lineTo(targetX, targetY);
-                    ctx.lineJoin = "round";
-                    ctx.lineCap = "round";
-                    ctx.shadowBlur = 2;
-                    ctx.shadowColor = link.color || "#000";
-                    ctx.stroke();
-                }}
+                linkDirectionalParticles={link => highlightLinks.has(link) ? 2 : 0}
+                linkDirectionalParticleWidth={2}
+                linkDirectionalParticleSpeed={() => 0.01}
+                cooldownTicks={100}
+                onEngineStop={() => graphRef.current.zoomToFit(400, 100)}
             />
-            {hoverNode && hoverNode.description && (
+            {hoverNode && (
                 <div
                     style={{
                         position: "absolute",
-                        left: (hoverNode.x || 0) + 10,
+                        top: 10,
+                        left: 10,
                         backgroundColor: "rgba(255, 255, 255, 0.9)",
-                        padding: "6px 8px",
-                        borderRadius: 4,
-                        boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+                        padding: "10px",
+                        borderRadius: 8,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                         pointerEvents: "none",
-                        whiteSpace: "nowrap",
-                        fontSize: 12,
+                        fontSize: 14,
                         zIndex: 10,
                     }}
                 >
-                    {hoverNode.description}
+                    <h3 style={{ margin: 0, marginBottom: 5 }}>{hoverNode.name}</h3>
+                    <p style={{ margin: 0 }}>{hoverNode.description}</p>
+                    <p style={{ margin: 0, marginTop: 5 }}>Связей: {hoverNode.connections}</p>
                 </div>
             )}
         </div>
@@ -201,3 +190,4 @@ function ForceGraph() {
 }
 
 export default ForceGraph;
+
