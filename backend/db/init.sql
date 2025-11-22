@@ -88,5 +88,39 @@ CREATE INDEX idx_community_subscriptions_both ON community_subscriptions(user_id
 
 CREATE INDEX idx_communities_created_by ON communities(created_by);
 
-INSERT INTO users (id, username, email, password_hash, salt) VALUES (1, 'aboba', 'aboba@mail.ru', 0x8, 0x9);
-INSERT INTO communities (name, description, is_private, created_by) VALUES ('aboba', 'asdasd', false, 1);
+-- --- SEED DATA ---
+
+-- Create 4 users
+-- Passwords and salts are placeholders as they are not needed for this test
+INSERT INTO users (id, username, email, password_hash, salt) VALUES
+(1, 'user1', 'user1@example.com', 'hash1', 'salt1'),
+(2, 'user2', 'user2@example.com', 'hash2', 'salt2'),
+(3, 'user3', 'user3@example.com', 'hash3', 'salt3'),
+(4, 'user4', 'user4@example.com', 'hash4', 'salt4')
+ON CONFLICT (id) DO NOTHING;
+
+-- Create 3 communities
+INSERT INTO communities (id, name, description, created_by) VALUES
+(1, 'Любители кошек', 'Обсуждаем наших пушистых друзей', 1),
+(2, 'Любители собак', 'Все о лучших друзьях человека', 2),
+(3, 'Фанаты научной фантастики', 'От Азимова до Желязны', 1)
+ON CONFLICT (id) DO NOTHING;
+
+-- Create subscriptions to generate intersections
+INSERT INTO community_subscriptions (user_id, community_id) VALUES
+-- Cat Lovers (size: 2)
+(1, 1),
+(2, 1),
+-- Dog Lovers (size: 3)
+(2, 2),
+(3, 2),
+(4, 2),
+-- Sci-Fi Fans (size: 3)
+(1, 3),
+(2, 3),
+(3, 3)
+ON CONFLICT DO NOTHING;
+
+-- Reset sequence for correct auto-incrementing IDs if table was not empty
+SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));
+SELECT setval('communities_id_seq', (SELECT MAX(id) FROM communities));
