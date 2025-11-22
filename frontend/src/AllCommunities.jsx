@@ -5,7 +5,7 @@ function Search() {
   return (
     <div style={{
       width: '100%',
-      maxWidth: '340px',
+      maxWidth: '290px',
       display: 'flex',
       alignItems: 'center',
       gap: '10px',
@@ -15,7 +15,7 @@ function Search() {
         placeholder="Поиск..."
         style={{
           flex: 1,
-          padding: '8px 14px',
+          padding: '8px 10px',
           borderRadius: '6px',
           border: '1px solid #ccc',
           fontSize: '16px',
@@ -205,30 +205,7 @@ function CommunitiesPage() {
   const pageTitle = "Сообщества";
   const description = "Все сообщества, в которых вы участвуете";
   const communities = [
-    {
-      id: 1,
-      name: "ReactJS",
-      avatar: "https://lh3.googleusercontent.com/a/ACg8ocK7OJThoaQ-AVkdzQt5WZE6ayNaFeSfEl-6Dw3SnfndDiIPeuQk=s288-c-no",
-      description: "Фреймворк для создания UI",
-      membersCount: 1500,
-      createdAt: "21 апреля 2024"
-    },
-    {
-      id: 2,
-      name: "Frontend",
-      avatar: "https://lh3.googleusercontent.com/a/ACg8ocK7OJThoaQ-AVkdzQt5WZE6ayNaFeSfEl-6Dw3SnfndDiIPeuQk=s288-c-no",
-      description: "Веб-разработка и дизайн",
-      membersCount: 1200,
-      createdAt: "15 июня 2023"
-    },
-    {
-      id: 3,
-      name: "Game Dev",
-      avatar: "https://lh3.googleusercontent.com/a/ACg8ocK7OJThoaQ-AVkdzQt5WZE6ayNaFeSfEl-6Dw3SnfndDiIPeuQk=s288-c-no",
-      description: "Разработка игр и геймдизайн",
-      membersCount: 800,
-      createdAt: "10 января 2025"
-    }
+    
   ];
 
   return (
@@ -284,9 +261,18 @@ function CommunitiesPage() {
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
             paddingRight: '10px',
+            color: 'black',
+            fontFamily: 'Arial, sans-serif'
           }}>
-            <CommunitiesList communities={communities} />
+            {communities.length > 0 ? (
+              <CommunitiesList communities={communities} />
+            ) : (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#888', fontSize: '18px' }}>
+                Сообществ нет
+              </div>
+            )}
           </div>
+
 
           {/* Правая колонка с компактным списком */}
           <Sidebar title="Все сообщества">
