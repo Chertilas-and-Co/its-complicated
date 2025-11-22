@@ -60,7 +60,7 @@ type CommunityResponse struct {
 	IsPrivate   bool          `json:"is_private"`
 	Subscribers []models.User `json:"subscribers"`
 	CreatedBy   int64         `json:"created_by"`
-	CreatedAt   time.Time     `json:"created_at"` // или time.Time
+	CreatedAt   time.Time     `json:"created_at"`
 }
 
 func GetCommunityByID(c *gin.Context) {
@@ -119,7 +119,7 @@ func GetCommunityByID(c *gin.Context) {
 }
 
 type SubscribeRequest struct {
-	UserId      int `json:"user_id"`
+	UserID      int `json:"user_id"`
 	CommunityID int `json:"community_id"`
 }
 
@@ -132,7 +132,7 @@ func SubscribeToCommunity(c *gin.Context) {
 	}
 
 	var exists bool
-	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", subReq.UserId).Scan(&exists)
+	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", subReq.UserID).Scan(&exists)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
@@ -152,7 +152,7 @@ func SubscribeToCommunity(c *gin.Context) {
 		return
 	}
 
-	result, err := DB.Exec("INSERT INTO community_subscriptions (user_id, community_id) VALUES ($1, $2)", subReq.UserId, subReq.CommunityID)
+	result, err := DB.Exec("INSERT INTO community_subscriptions (user_id, community_id) VALUES ($1, $2)", subReq.UserID, subReq.CommunityID)
 	if err != nil {
 		log.Println(err)
 	}
@@ -404,4 +404,18 @@ func GetCommunitySubscribers(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, subscribers)
+}
+
+func CreateCommunity(name, description string, creatorID int64) (int64, error) {
+	var newID int64
+	query := `
+		INSERT INTO communities (name, description, is_private, created_by, created_at) 
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`
+	err := DB.QueryRow(query, name, description, false, creatorID, time.Now()).Scan(&newID)
+	if err != nil {
+		return 0, err
+	}
+	return newID, nil
 }

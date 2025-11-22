@@ -2,6 +2,7 @@ package users
 
 import (
 	"bytes"
+	"database/sql" // Added missing import
 	"encoding/hex"
 	"net/http"
 
@@ -26,7 +27,7 @@ type AuthRequest struct {
 }
 
 type User struct {
-	ID       int    `json:"id"`
+	ID       int64  `json:"id"`
 	Username string `json:"username"`
 }
 
@@ -48,7 +49,6 @@ func RegisterUser(c *gin.Context) {
 			http.StatusBadRequest,
 			gin.H{"error": "Username, email, and password are required"},
 		)
-		println("asdad")
 		return
 	}
 
@@ -95,7 +95,6 @@ func AuthorizeUser(c *gin.Context, sessionManager *scs.SessionManager) {
 	}
 
 	var userData UserData
-	// Read hex strings from the DB
 	err := pg.DB.QueryRow("SELECT id, password_hash, salt FROM users WHERE username = $1 OR email = $1", req.Login).
 		Scan(&userData.ID, &userData.PasswordHash, &userData.Salt)
 	if err != nil {
@@ -105,7 +104,6 @@ func AuthorizeUser(c *gin.Context, sessionManager *scs.SessionManager) {
 		return
 	}
 
-	// Decode hex strings back to bytes
 	saltBytes, err := hex.DecodeString(userData.Salt)
 	if err != nil {
 		zap.S().Errorw("Failed to decode salt from hex", "error", err)
@@ -125,7 +123,6 @@ func AuthorizeUser(c *gin.Context, sessionManager *scs.SessionManager) {
 		return
 	}
 
-	// Compare the byte slices
 	if bytes.Equal(password.HashPassword(req.Password, saltBytes), hashBytes) {
 		err = sessionManager.RenewToken(c.Request.Context())
 		if err != nil {
@@ -185,7 +182,6 @@ func GetAllUsers(c *gin.Context) {
 }
 
 func LogoutUser(c *gin.Context, sessionManager *scs.SessionManager) {
-	// Destroy the session
 	err := sessionManager.Destroy(c.Request.Context())
 	if err != nil {
 		zap.S().Errorw("Failed to destroy session", "error", err)
@@ -198,3 +194,35 @@ func LogoutUser(c *gin.Context, sessionManager *scs.SessionManager) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
 }
+
+// GetCurrentUser gets information about the currently logged-in user.
+func GetCurrentUser(c *gin.Context, sessionManager *scs.SessionManager) {
+	userID := sessionManager.GetInt64(c.Request.Context(), "userID")
+	if userID == 0 {
+		c.JSON(
+			http.StatusUnauthorized,
+			gin.H{"error": "User not authenticated"},
+		)
+		return
+	}
+
+	var user User
+	err := pg.DB.QueryRow("SELECT id, username FROM users WHERE id = $1", userID).
+		Scan(&user.ID, &user.Username)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(
+				http.StatusNotFound,
+				gin.H{"error": "User from session not found in DB"},
+			)
+			return
+		}
+		zap.S().
+			Errorw("Failed to get current user from DB", "error", err, "user_id", userID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
