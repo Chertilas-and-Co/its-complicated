@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom"; // Import for navigation
 import ForceGraph2D from "react-force-graph-2d";
 import { forceCollide } from "d3-force";
 
-const NODE_RELSIZE = 10; // Base size of the node
+const NODE_RELSIZE = 10;
 const FORCE_MANYBODIES_STRENGTH = -100;
 const FORCE_COLLIDE_RADIUS = NODE_RELSIZE * 1.5;
 
@@ -13,6 +14,7 @@ function ForceGraph() {
     const [highlightNodes, setHighlightNodes] = useState(new Set());
     const [highlightLinks, setHighlightLinks] = useState(new Set());
     const [communityImage, setCommunityImage] = useState(null);
+    const navigate = useNavigate(); // Get navigate function
 
     useEffect(() => {
         const img = new Image();
@@ -81,6 +83,11 @@ function ForceGraph() {
         }
     };
 
+    // --- NEW: Click handler for navigation ---
+    const handleNodeClick = (node) => {
+        navigate(`/community/${node.id}`);
+    };
+
     const nodeCanvasObject = useCallback((node, ctx, globalScale) => {
         const size = node.size;
         const isHighlighted = highlightNodes.size > 0 && !highlightNodes.has(node);
@@ -88,7 +95,6 @@ function ForceGraph() {
 
         ctx.globalAlpha = opacity;
 
-        // Glow effect
         if (highlightNodes.has(node)) {
             ctx.shadowBlur = 20;
             ctx.shadowColor = 'rgba(74, 144, 226, 0.8)';
@@ -97,7 +103,6 @@ function ForceGraph() {
             ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
         }
 
-        // Draw image
         if (communityImage) {
             ctx.save();
             ctx.beginPath();
@@ -107,17 +112,14 @@ function ForceGraph() {
             ctx.restore();
         }
 
-        // Draw border
         ctx.beginPath();
         ctx.arc(node.x, node.y, size / 2, 0, 2 * Math.PI, false);
         ctx.strokeStyle = `rgba(74, 144, 226, ${opacity})`;
         ctx.lineWidth = 1 / globalScale;
         ctx.stroke();
 
-        // Reset shadow for text
         ctx.shadowBlur = 0;
 
-        // Draw label
         const label = node.name;
         const fontSize = 12 / globalScale;
         ctx.font = `bold ${fontSize}px Sans-Serif`;
@@ -126,7 +128,7 @@ function ForceGraph() {
         ctx.fillStyle = `rgba(0, 0, 0, ${opacity})`;
         ctx.fillText(label, node.x, node.y + size / 2 + fontSize * 0.9);
         
-        ctx.globalAlpha = 1; // Reset alpha
+        ctx.globalAlpha = 1;
     }, [communityImage, highlightNodes]);
 
     const linkCanvasObject = useCallback((link, ctx, globalScale) => {
@@ -142,7 +144,7 @@ function ForceGraph() {
         ctx.lineTo(link.target.x, link.target.y);
         ctx.stroke();
         
-        ctx.globalAlpha = 1; // Reset alpha
+        ctx.globalAlpha = 1;
     }, [highlightLinks]);
 
     return (
@@ -153,11 +155,14 @@ function ForceGraph() {
                 nodeVal="size"
                 nodeCanvasObject={nodeCanvasObject}
                 linkCanvasObject={linkCanvasObject}
-                linkWidth={0} // We draw links manually
+                linkWidth={0}
                 onNodeHover={handleNodeHover}
+                onNodeClick={handleNodeClick} // --- ADDED: Click handler ---
                 onNodeDragEnd={node => {
-                    node.fx = node.x;
-                    node.fy = node.y;
+                    // --- FIXED: Release node back into simulation ---
+                    node.fx = null;
+                    node.fy = null;
+                    graphRef.current.d3ReheatSimulation(); // Wake up simulation
                 }}
                 linkDirectionalParticles={link => highlightLinks.has(link) ? 2 : 0}
                 linkDirectionalParticleWidth={2}
@@ -190,4 +195,3 @@ function ForceGraph() {
 }
 
 export default ForceGraph;
-
