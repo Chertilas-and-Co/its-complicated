@@ -106,6 +106,9 @@ func main() {
 	api.Use(middleware.AuthMiddleware(sessionManager))
 	{
 		api.GET("/users", users.GetAllUsers)
+		api.POST("/logout", func(c *gin.Context) {
+			users.LogoutUser(c, sessionManager)
+		})
 	}
 
 	r.NoRoute(func(c *gin.Context) {
