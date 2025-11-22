@@ -1,19 +1,16 @@
-package communities
+package pg
 
 import (
 	"database/sql"
-	"log"
+	"github.com/gin-gonic/gin"
+	_ "github.com/lib/pq"
+	"main/internal/models"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq"
-
-	"main/internal/models"
+	"log"
 )
-
-var DB *sql.DB
 
 // CREATE TABLE communities (
 //
@@ -25,7 +22,6 @@ var DB *sql.DB
 //	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 //
 // );
-
 func InsertCommunityInDB(c *gin.Context) {
 	var com models.Community
 
@@ -36,25 +32,21 @@ func InsertCommunityInDB(c *gin.Context) {
 	var exists bool
 	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)", com.CreatedBy).
 		Scan(&exists)
+
 	if err != nil {
 
 		c.JSON(http.StatusBadRequest, gin.H{"message": "No user with this ID"})
 		log.Println(err)
 		return
 	}
-	result, err := DB.Exec(
-		"INSERT INTO communities (name, description, is_private, created_by, created_at) VALUES ($1, $2, $3, $4, $5)",
-		com.Name,
-		com.Description,
-		com.IsPrivate,
-		com.CreatedBy,
-		com.CreatedAt,
-	)
+	result, err := DB.Exec("INSERT INTO communities (name, description, is_private, created_by, created_at) VALUES ($1, $2, $3, $4, $5)",
+		com.Name, com.Description, com.IsPrivate, com.CreatedBy, com.CreatedAt)
 	if err != nil {
 		log.Println(err)
 	}
 
 	lastInsertID, err := result.LastInsertId()
+
 	if err != nil {
 		log.Println(err)
 	}
@@ -138,8 +130,7 @@ func SubscribeToCommunity(c *gin.Context) {
 	}
 
 	var exists bool
-	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", subReq.UserId).
-		Scan(&exists)
+	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", subReq.UserId).Scan(&exists)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
@@ -149,45 +140,35 @@ func SubscribeToCommunity(c *gin.Context) {
 		return
 	}
 
-	err = DB.QueryRow("SELECT EXISTS(SELECT 1 FROM commuinties WHERE id = $1)", subReq.CommunityID).
-		Scan(&exists)
+	err = DB.QueryRow("SELECT EXISTS(SELECT 1 FROM commuinties WHERE id = $1)", subReq.CommunityID).Scan(&exists)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 	if !exists {
-		c.JSON(
-			http.StatusBadRequest,
-			gin.H{"error": "no community with such id"},
-		)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no community with such id"})
 		return
 	}
 
-	result, err := DB.Exec(
-		"INSERT INTO community_subscriptions (user_id, community_id) VALUES ($1, $2)",
-		subReq.UserId,
-		subReq.CommunityID,
-	)
+	result, err := DB.Exec("INSERT INTO community_subscriptions (user_id, community_id) VALUES ($1, $2)", subReq.UserId, subReq.CommunityID)
 	if err != nil {
 		log.Println(err)
 	}
 
 	lastInsertID, err := result.LastInsertId()
+
 	if err != nil {
 		log.Println(err)
 	}
 	log.Println("Last inserted id:", lastInsertID)
-}
 
+}
 func GetAllCommunities(c *gin.Context) {
 	query := `SELECT id, name, description, is_private, created_by, created_at FROM communities`
 
 	rows, err := DB.Query(query)
 	if err != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			gin.H{"error": "cannot fetch communities"},
-		)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "cannot fetch communities"})
 		return
 	}
 	defer rows.Close()
@@ -204,20 +185,14 @@ func GetAllCommunities(c *gin.Context) {
 			&community.CreatedAt,
 		)
 		if err != nil {
-			c.JSON(
-				http.StatusInternalServerError,
-				gin.H{"error": "error reading communities"},
-			)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error reading communities"})
 			return
 		}
 		// По желанию можно загрузить подписчиков для каждого сообщества, но это будет сложнее
 		communities = append(communities, community)
 	}
 	if err := rows.Err(); err != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			gin.H{"error": "error processing communities"},
-		)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error processing communities"})
 		return
 	}
 
