@@ -33,12 +33,21 @@ CREATE TABLE communities (
 -- Таблица постов в сообществе
 CREATE TABLE posts (
     id BIGSERIAL PRIMARY KEY,
-    community_id BIGINT NOT NULL REFERENCES communities(id),
-    text TEXT, 
-    pic BYTEA,
-    pic_url VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by BIGINT NOT NULL REFERENCES users(id)
+    title VARCHAR(255) NOT NULL,
+    text TEXT NOT NULL,
+    pic_url VARCHAR(500),
+    community_id BIGINT NOT NULL,
+    author_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE post_likes (
+    post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (post_id, user_id),
+    UNIQUE (post_id, user_id)
 );
 
 -- Таблица подписчиков сообщества
@@ -67,9 +76,10 @@ CREATE INDEX idx_friendships_friend_id ON friendships(friend_id);
 CREATE INDEX idx_friendships_status ON friendships(status);
 CREATE INDEX idx_friendships_both ON friendships(user_id, friend_id);
 
+CREATE INDEX idx_post_likes_user_id ON post_likes(user_id);
+
 CREATE INDEX idx_posts_community_id ON posts(community_id);
-CREATE INDEX idx_posts_created_by ON posts(created_by);
-CREATE INDEX idx_posts_community_created ON posts(community_id, created_at DESC); -- Для paginate
+CREATE INDEX idx_posts_author_id ON posts(author_id);
 CREATE INDEX idx_posts_created_at ON posts(created_at DESC);
 
 CREATE INDEX idx_community_subscriptions_user_id ON community_subscriptions(user_id);

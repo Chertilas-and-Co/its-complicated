@@ -43,14 +43,14 @@ type CommunitySubscription struct {
 
 // Post - пост в сообществе
 type Post struct {
-	ID          int64     `json:"id"           db:"id"`
-	Text        string    `json:"text"         db:"text"`
-	Pic         []byte    `json:"-"            db:"pic"`
-	PicURL      string    `json:"pic_url"      db:"pic_url"`
-	CommunityID int64     `json:"community_id" db:"community_id"`
-	AuthorID    int64     `json:"author_id"    db:"author_id"`
-	CreatedAt   time.Time `json:"created_at"   db:"created_at"`
-
+	ID          int64     `json:"id"                  db:"id"`
+	Title       string    `json:"title"               db:"title"`
+	Text        string    `json:"text"                db:"text"`
+	PicURL      string    `json:"pic_url"             db:"pic_url"`
+	CommunityID int64     `json:"community_id"        db:"community_id"`
+	AuthorID    int64     `json:"author_id"           db:"author_id"`
+	CreatedAt   time.Time `json:"created_at"          db:"created_at"`
+	UpdatedAt   time.Time `json:"created_at"          db:"created_at"`
 	// Загружаемые отношения
 	Author    *User      `json:"author,omitempty"`
 	Community *Community `json:"community,omitempty"`
