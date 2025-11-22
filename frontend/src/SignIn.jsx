@@ -15,12 +15,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
 function Copyright(props) {
-  return (
-    <Typography variant="body2" color="text.secondary" align="center" {...props}>
-      {new Date().getFullYear()}
-      {'.'}
-    </Typography>
-  );
+    return (
+        <Typography variant="body2" color="text.secondary" align="center" {...props}>
+            {new Date().getFullYear()}
+            {'.'}
+        </Typography>
+    );
 }
 
 export default function SignIn() {

@@ -1,0 +1,22 @@
+.graph-page-container {
+    margin: 2rem auto; /* Add top and bottom margin */
+    background-color: #ffffff; /* White background for the "card" */
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); /* Soft shadow */
+}
+
+.graph-title {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2a3f5f; /* Softer than black */
+    font-size: 2.5em;
+    font-weight: 300; /* Light font weight */
+    letter-spacing: -1px;
+}
+
+.graph-wrapper {
+    border: 1px solid #eef2f7; /* Very light border */
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative; /* For positioning extra elements */
+}
