@@ -180,7 +180,7 @@ function CommunityPage() {
     }
 
     // Маппинг подписчиков на объект с нужными полями для UserList
-    const users = community.subscribers.map(u => ({
+    const users = (community.subscribers || []).map(u => ({ // Safely access subscribers
         id: u.id,
         username: u.username,
         email: u.email,

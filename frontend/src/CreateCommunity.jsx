@@ -36,7 +36,7 @@ const CreateCommunityPage = () => {
       });
 
       const data = await response.json();
-      console.log("Community creation response data:", data); // Added log
+      console.log("Community creation response data:", JSON.stringify(data, null, 2)); // Added JSON.stringify for better logging
 
       if (response.ok) {
         setMessage("Сообщество успешно создано!");

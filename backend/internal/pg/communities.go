@@ -72,6 +72,8 @@ func GetCommunityByID(c *gin.Context) {
 	}
 
 	var community CommunityResponse
+	// Initialize Subscribers as an empty slice to ensure it's never null in JSON
+	community.Subscribers = []models.User{}
 	query := `SELECT id, name, description, is_private FROM communities WHERE id = $1`
 
 	err = DB.QueryRow(query, id).Scan(
@@ -85,35 +87,38 @@ func GetCommunityByID(c *gin.Context) {
 			c.JSON(404, gin.H{"error": "community not found"})
 			return
 		}
+		log.Printf("GetCommunityByID: error querying community %d: %v", id, err)
 		c.JSON(500, gin.H{"error": "unknown error"})
 		return
 	}
 
 	// Получаем user_id подписчиков для этого сообщества
 	subsQuery := `SELECT users.id, users.username FROM community_subscriptions JOIN users ON users.id = community_subscriptions.user_id WHERE community_id = $1`
-	println(id)
+	println(id) // This println should probably be a log.Debugf or removed
 	rows, err := DB.Query(subsQuery, id)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "cannot fetch subscribers"})
-		return
-	}
-	defer rows.Close()
+		// Log the error but don't fail the request if subscribers can't be fetched
+		log.Printf("GetCommunityByID: error fetching subscribers for community %d: %v", id, err)
+		// community.Subscribers is already initialized to empty, so we just continue
+	} else {
+		defer rows.Close()
 
-	var subscribers []models.User
-	for rows.Next() {
-		var userID int64
-		var username string
-		if err := rows.Scan(&userID, &username); err != nil {
-			c.JSON(500, gin.H{"error": "error reading subscriber"})
-			return
+		var subscribers []models.User
+		for rows.Next() {
+			var userID int64
+			var username string
+			if err := rows.Scan(&userID, &username); err != nil {
+				log.Printf("GetCommunityByID: error reading subscriber for community %d: %v", id, err)
+				// Continue to next row or handle error
+				continue
+			}
+			subscribers = append(subscribers, models.User{ID: userID, Username: username})
 		}
-		subscribers = append(subscribers, models.User{ID: userID, Username: username})
+		if err := rows.Err(); err != nil {
+			log.Printf("GetCommunityByID: error processing subscribers rows for community %d: %v", id, err)
+		}
+		community.Subscribers = subscribers
 	}
-	if err := rows.Err(); err != nil {
-		c.JSON(500, gin.H{"error": "error processing subscribers"})
-		return
-	}
-	community.Subscribers = subscribers
 
 	c.JSON(200, community)
 }
