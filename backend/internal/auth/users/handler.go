@@ -183,3 +183,18 @@ func GetAllUsers(c *gin.Context) {
 
 	c.JSON(http.StatusOK, users)
 }
+
+func LogoutUser(c *gin.Context, sessionManager *scs.SessionManager) {
+	// Destroy the session
+	err := sessionManager.Destroy(c.Request.Context())
+	if err != nil {
+		zap.S().Errorw("Failed to destroy session", "error", err)
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Failed to log out"},
+		)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
+}

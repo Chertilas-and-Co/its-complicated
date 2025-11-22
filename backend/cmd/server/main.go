@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"main/internal/auth/users"
+	"main/internal/communities"
 	"main/internal/middleware"
 	"main/internal/pg"
 	"main/internal/profile"
@@ -101,6 +102,8 @@ func main() {
 	r.POST("/auth", func(c *gin.Context) {
 		users.AuthorizeUser(c, sessionManager)
 	})
+	r.GET("/community/:id", communities.GetCommunityByID)
+	r.GET("/communities", communities.GetAllCommunities)
 
 	r.GET("/:userID/posts", profile.GetUserPosts)
 	r.GET("/posts/:postID", profile.GetPost)
@@ -115,6 +118,9 @@ func main() {
 		api.DELETE("/posts/:postID", profile.DeletePost)
 		api.POST("/posts/:postID/like", profile.LikePost)
 		api.DELETE("/posts/:postID/like", profile.UnlikePost)
+		api.POST("/logout", func(c *gin.Context) {
+			users.LogoutUser(c, sessionManager)
+		})
 	}
 
 	r.NoRoute(func(c *gin.Context) {
