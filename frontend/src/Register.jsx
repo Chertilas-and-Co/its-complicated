@@ -1,47 +1,45 @@
 import React, { useState } from 'react';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { authService } from './services/authService';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
 import Link from '@mui/material/Link';
 import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
+import Alert from '@mui/material/Alert';
 
 export default function Register() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [passwordConfirm, setPasswordConfirm] = useState("");
-    const [login, setLogin] = useState("");
-    const [message, setMessage] = useState("");
+    // --- CHANGE: Using 'login' state instead of 'username' ---
+    const [login, setLogin] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [passwordConfirm, setPasswordConfirm] = useState('');
+    
+    const [error, setError] = useState("");
+    const navigate = useNavigate();
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
-        const data = new FormData(event.currentTarget);
+        setError("");
+
+        if (password !== passwordConfirm) {
+            setError("Пароли не совпадают");
+            return;
+        }
 
         try {
-            const response = fetch("http://localhost:8080/register", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ login, email, password, passwordConfirm }),
-            });
-
-            if (response.ok) {
-                setMessage("Авторизация успешна!");
-            } else {
-                const text = response.text();
-                setMessage(`Ошибка: ${text}`);
-            }
-        } catch (error) {
-            setMessage(`Ошибка сети: ${error.message}`);
+            // --- CHANGE: Passing 'login' to the service ---
+            await authService.register({ login, email, password });
+            navigate('/login?registered=true');
+        } catch (err) {
+            setError(err.message);
         }
-    }
+    };
 
     return (
         <Container component="main" maxWidth="xs">
@@ -60,54 +58,55 @@ export default function Register() {
                 <Typography component="h1" variant="h5">
                     Регистрация
                 </Typography>
+                {error && <Alert severity="error" sx={{ width: '100%', mt: 2 }}>{error}</Alert>}
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+                    {/* --- CHANGE: TextField now uses 'login' --- */}
                     <TextField
                         margin="normal"
                         required
                         fullWidth
-                        onChange={e => setEmail(e.target.value)}
-                        id="email"
-                        label="Почтовый адрес"
-                        name="email"
-                        autoComplete="email"
-                        autoFocus
-                    />
-                    <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        onChange={e => setLogin(e.target.value)}
                         id="login"
                         label="Имя пользователя"
                         name="login"
                         autoComplete="login"
                         autoFocus
+                        value={login}
+                        onChange={(e) => setLogin(e.target.value)}
                     />
                     <TextField
                         margin="normal"
                         required
                         fullWidth
-                        onChange={e => setPassword(e.target.value)}
+                        id="email"
+                        label="Почтовый адрес"
+                        name="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
                         name="password"
                         label="Пароль"
                         type="password"
                         id="password"
-                        autoComplete="current-password"
+                        autoComplete="new-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                     />
                     <TextField
                         margin="normal"
                         required
                         fullWidth
-                        onChange={e => setPasswordConfirm(e.target.value)}
                         name="passwordConfirm"
                         label="Подтверждение пароля"
                         type="password"
                         id="passwordConfirm"
-                        autoComplete="current-password"
-                    />
-                    <FormControlLabel
-                        control={<Checkbox value="remember" color="primary" />}
-                        label="Запомнить меня"
+                        autoComplete="new-password"
+                        value={passwordConfirm}
+                        onChange={(e) => setPasswordConfirm(e.target.value)}
                     />
                     <Button
                         type="submit"
@@ -117,9 +116,13 @@ export default function Register() {
                     >
                         Зарегистрироваться
                     </Button>
-                    <Link href="/auth" variant="body2">
-                        {"Уже есть аккаунт?"}
-                    </Link>
+                    <Grid container justifyContent="flex-end">
+                        <Grid item>
+                            <Link component={RouterLink} to="/login" variant="body2">
+                                {"Уже есть аккаунт? Войти"}
+                            </Link>
+                        </Grid>
+                    </Grid>
                 </Box>
             </Box>
         </Container>

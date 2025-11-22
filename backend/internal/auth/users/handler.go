@@ -2,6 +2,7 @@ package users
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/hex"
 	"net/http"
 
@@ -197,4 +198,36 @@ func LogoutUser(c *gin.Context, sessionManager *scs.SessionManager) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
+}
+
+// GetCurrentUser gets information about the currently logged-in user.
+func GetCurrentUser(c *gin.Context, sessionManager *scs.SessionManager) {
+	userID := sessionManager.GetInt64(c.Request.Context(), "userID")
+	if userID == 0 {
+		c.JSON(
+			http.StatusUnauthorized,
+			gin.H{"error": "User not authenticated"},
+		)
+		return
+	}
+
+	var user struct {
+		ID       int64  `json:"id"`
+		Username string `json:"username"`
+	}
+
+	err := pg.DB.QueryRow("SELECT id, username FROM users WHERE id = $1", userID).
+		Scan(&user.ID, &user.Username)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+			return
+		}
+		zap.S().
+			Errorw("Failed to get current user from DB", "error", err, "user_id", userID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }

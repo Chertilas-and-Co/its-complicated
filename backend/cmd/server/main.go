@@ -119,6 +119,9 @@ func main() {
 	api.Use(middleware.AuthMiddleware(sessionManager))
 	{
 		api.GET("/users", users.GetAllUsers)
+		api.GET("/me", func(c *gin.Context) {
+			users.GetCurrentUser(c, sessionManager)
+		})
 
 		api.POST("/profile/posts", profile.CreatePost)
 		api.PUT("/profile/posts/:postID", profile.UpdatePost)
