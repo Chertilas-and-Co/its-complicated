@@ -59,6 +59,27 @@ function Sidebar({ title, children }) {
   );
 }
 
+function ButtonCreate(){
+  return(
+        <a href="/create_community">
+           <div style={{ flex: 1, maxWidth: '340px' , alignItems: 'center'}}><button style={{
+              background: '#222',
+              width: '200px',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '7px 18px',
+              fontSize: '15px',
+              cursor: 'pointer',
+              outline: 'none',
+              margin: '0 auto',
+              display: 'block'
+            }}>
+              Создать сообщество
+            </button></div>
+            </a>
+    );
+}
 
 function ButtonCommunity(){
     return(
@@ -240,21 +261,7 @@ function CommunitiesPage() {
           }}>
             {pageTitle}
           </div>
-         <div style={{ flex: 1, maxWidth: '340px' , alignItems: 'center'}}><button style={{
-              background: '#222',
-              width: '200px',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '7px 18px',
-              fontSize: '15px',
-              cursor: 'pointer',
-              outline: 'none',
-              margin: '0 auto',
-              display: 'block'
-            }}>
-              Создать сообщество
-            </button></div>
+         <ButtonCreate/>
         </div>
 
         <div style={{

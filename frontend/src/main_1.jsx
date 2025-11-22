@@ -7,6 +7,8 @@ import Home from './Home';
 import UserPage from './User';
 import CommunityPage  from './Communities';
 import Friends from './Friends';
+import DiscussionPage from './Discussion';
+import CreateCommunityPage from './CreateCommunity';
 createRoot(document.getElementById('root')).render(
  <React.StrictMode>
     <BrowserRouter>
@@ -17,6 +19,8 @@ createRoot(document.getElementById('root')).render(
         <Route path="/communities" element={<CommunitiesPage />} />
         <Route path="/friends" element={<Friends />} />
         <Route path="/community" element={<CommunityPage />} />
+        <Route path="/discussion" element={<DiscussionPage />} />
+        <Route path="/create_community" element={<CreateCommunityPage />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
