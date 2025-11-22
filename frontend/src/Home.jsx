@@ -1,6 +1,23 @@
-import Navbar from './Navbar';
-<Navbar/>
-const Home = () => {
-  return <h2>Главная страница</h2>;
-};
-export default Home;
+import React from 'react';
+import Button from '@mui/material/Button';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
+
+export default function Home() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  return (
+    <div>
+      <h1>Welcome to the Home Page!</h1>
+      <Button variant="contained" onClick={handleLogout}>
+        Logout
+      </Button>
+    </div>
+  );
+}

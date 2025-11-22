@@ -11,6 +11,8 @@ import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 
 function Copyright(props) {
   return (
@@ -22,36 +24,26 @@ function Copyright(props) {
 }
 
 export default function SignIn() {
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const handleSubmit = (event) => {
+  const navigate = useNavigate();
+  const { login: authLogin } = useAuth();
 
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
-
     try {
-      const response = fetch("http://localhost:8080/auth", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (response.ok) {
-        console.log("Авторизация успешна!");
+      const success = await authLogin({ login, password });
+      if (success) {
+        setMessage("Авторизация успешна!");
+        navigate('/home');
       } else {
-        const text = response.text();
-        console.log(`Ошибка: ${text}`);
+        setMessage(`Ошибка: неверные учетные данные`);
       }
     } catch (error) {
-      console.log(`Ошибка сети: ${error.message}`);
-    }}
+      setMessage(`Ошибка сети: ${error.message}`);
+    }
+  };
 
   return (
     <Container component="main" maxWidth="xs">
@@ -75,18 +67,18 @@ export default function SignIn() {
             margin="normal"
             required
             fullWidth
-              onChange={e => setEmail(e.target.value)}
-            id="email"
-            label="Почтовый адрес"
-            name="email"
-            autoComplete="email"
+            onChange={e => setLogin(e.target.value)}
+            id="login"
+            label="Имя пользователя или почта"
+            name="login"
+            autoComplete="login"
             autoFocus
           />
           <TextField
             margin="normal"
             required
             fullWidth
-              onChange={e => setPassword(e.target.value)}
+            onChange={e => setPassword(e.target.value)}
             name="password"
             label="Пароль"
             type="password"
@@ -105,10 +97,11 @@ export default function SignIn() {
           >
             Войти
           </Button>
-        <Link href="/register" variant="body2">
-          {"Ещё нет аккаунта?"}
-        </Link>
+          <Link href="/register" variant="body2">
+            {"Ещё нет аккаунта?"}
+          </Link>
         </Box>
+        {message && <Typography color="error">{message}</Typography>}
       </Box>
     </Container>
   );

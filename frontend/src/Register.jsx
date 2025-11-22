@@ -11,6 +11,8 @@ import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 
 export default function Register() {
     const [email, setEmail] = useState("");
@@ -18,24 +20,23 @@ export default function Register() {
     const [passwordConfirm, setPasswordConfirm] = useState("");
     const [login, setLogin] = useState("");
     const [message, setMessage] = useState("");
+    const navigate = useNavigate();
+    const { register } = useAuth();
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
-        const data = new FormData(event.currentTarget);
-
+        if (password !== passwordConfirm) {
+            setMessage("Пароли не совпадают");
+            return;
+        }
         try {
-            const response = fetch("http://localhost:8080/register", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ login, email, password, passwordConfirm }),
-            });
+            const response = await register({ login, email, password });
 
             if (response.ok) {
-                setMessage("Авторизация успешна!");
+                setMessage("Регистрация успешна!");
+                navigate('/login');
             } else {
-                const text = response.text();
+                const text = await response.text();
                 setMessage(`Ошибка: ${text}`);
             }
         } catch (error) {
@@ -117,10 +118,11 @@ export default function Register() {
                     >
                         Зарегистрироваться
                     </Button>
-                    <Link href="/auth" variant="body2">
+                    <Link href="/login" variant="body2">
                         {"Уже есть аккаунт?"}
                     </Link>
                 </Box>
+                {message && <Typography color="error">{message}</Typography>}
             </Box>
         </Container>
     );
