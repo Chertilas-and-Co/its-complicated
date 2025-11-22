@@ -15,6 +15,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <React.StrictMode>
         <BrowserRouter>
             <Routes>
+                <Route path="/community/:id" element={<CommunityPage />} />
                 <Route path="/communities" element={<CommunitiesPage />} />
                 <Route path="/graph" element={<ForceGraph />} />
                 <Route path="/auth" element={<SignIn />} />
