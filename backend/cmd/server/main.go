@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"main/internal/auth/users"
+	"main/internal/comments"
 	community "main/internal/community/posts"
 	"main/internal/middleware"
 	"main/internal/pg"
@@ -103,21 +104,34 @@ func main() {
 	r.POST("/auth", func(c *gin.Context) {
 		users.AuthorizeUser(c, sessionManager)
 	})
+	r.GET("/communities/:id/subscribers", pg.GetCommunitySubscribers)
 	r.GET("/community/:id", pg.GetCommunityByID)
 	r.GET("/communities", pg.GetAllCommunities)
 
 	r.GET("/profile/:userID/posts", profile.GetUserPosts)
 	r.GET("/profile/posts/:postID", profile.GetPost)
 
-	r.GET("/community/:id/:userID/posts", community.GetUserPosts)
+	r.GET("/community/:id/posts", community.GetUserPosts)
 	r.GET("/community/posts/:postID", community.GetPost)
 
 	r.GET("/graph-data", pg.GetGraphData)
+
+	r.GET("/community/:id/posts/:postID/comments?limit=20&offset=0", comments.GetCommentsByPostID)
+	r.GET("/profile/posts/:postID/comments?limit=20&offset=0", comments.GetCommentsByPostID)
+	r.GET("/community/:id/posts/:postID/comments/:commentID", comments.GetComment)
+	r.GET("profile/posts/:postID/comments/:commentID", comments.GetComment)
 
 	// Protected routes
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware(sessionManager))
 	{
+		api.POST("/community/:id/posts/:postID/comments", comments.CreateComment)
+		api.POST("/profile/posts/:postID/comments", comments.CreateComment)
+		api.PUT("/community/:id/posts/:postID/comments/:commentID", comments.UpdateComment)
+		api.PUT("/profile/posts/:postID/comments/:commentID", comments.UpdateComment)
+		api.DELETE("/community/:id/posts/:postID/comments/:commentID", comments.DeleteComment)
+		api.DELETE("/profile/posts/:postID/comments/:commentID", comments.DeleteComment)
+
 		api.GET("/users", users.GetAllUsers)
 
 		api.POST("/profile/posts", profile.CreatePost)
@@ -126,11 +140,11 @@ func main() {
 		api.POST("/profile/posts/:postID/like", profile.LikePost)
 		api.DELETE("/profile/posts/:postID/like", profile.UnlikePost)
 
-		api.POST("/community/posts", community.CreatePost)
-		api.PUT("/community/posts/:postID", community.UpdatePost)
-		api.DELETE("/community/posts/:postID", community.DeletePost)
-		api.POST("/community/posts/:postID/like", community.LikePost)
-		api.DELETE("/community/posts/:postID/like", community.UnlikePost)
+		api.POST("/community/:id/posts", community.CreatePost)
+		api.PUT("/community/:id/posts/:postID", community.UpdatePost)
+		api.DELETE("/community/:id/posts/:postID", community.DeletePost)
+		api.POST("/community/:id/posts/:postID/like", community.LikePost)
+		api.DELETE("/community/:id/posts/:postID/like", community.UnlikePost)
 
 		api.POST("/logout", func(c *gin.Context) {
 			users.LogoutUser(c, sessionManager)
@@ -166,4 +180,3 @@ func main() {
 }
 
 // ABOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOBA
-
