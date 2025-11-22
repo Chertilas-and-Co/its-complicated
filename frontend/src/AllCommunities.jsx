@@ -271,7 +271,7 @@ function CommunitiesPage() {
 
                     {/* Центр - список сообществ в карточках */}
                     <div style={{
-                        flexA: 1,
+                        flex: 1,
                         overflowY: 'auto',
                         scrollbarWidth: 'none',
                         msOverflowStyle: 'none',
