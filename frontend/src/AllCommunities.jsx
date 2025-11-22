@@ -1,4 +1,5 @@
 import { useState, React, useEffect } from 'react';
+import communityAvatar from '/community.jpg';
 import Navbar from './Navbar';
 
 function Search() {
@@ -112,7 +113,7 @@ function CommunitiesListCompact({ communities }) {
                     alignItems: 'center'
                 }}>
                     <img
-                        src={community.avatar}
+                        src={communityAvatar}
                         alt={community.name}
                         style={{
                             width: '36px',
@@ -146,7 +147,7 @@ function CommunityCard({ community }) {
 
             <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
                 <img
-                    src={community.avatar}
+                    src={communityAvatar}
                     alt={community.name}
                     style={{
                         width: '72px',
@@ -270,7 +271,7 @@ function CommunitiesPage() {
 
                     {/* Центр - список сообществ в карточках */}
                     <div style={{
-                        flex: 1,
+                        flexA: 1,
                         overflowY: 'auto',
                         scrollbarWidth: 'none',
                         msOverflowStyle: 'none',
