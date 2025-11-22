@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"main/internal/auth/users"
+	community "main/internal/community/posts"
 	"main/internal/middleware"
 	"main/internal/pg"
 	profile "main/internal/profile/posts"
@@ -104,19 +105,30 @@ func main() {
 	r.GET("/community/:id", pg.GetCommunityByID)
 	r.GET("/communities", pg.GetAllCommunities)
 
-	r.GET("/:userID/posts", profile.GetUserPosts)
-	r.GET("/posts/:postID", profile.GetPost)
+	r.GET("/profile/:userID/posts", profile.GetUserPosts)
+	r.GET("/profile/posts/:postID", profile.GetPost)
+
+	r.GET("/community/:userID/posts", community.GetUserPosts)
+	r.GET("/community/posts/:postID", community.GetPost)
 
 	// Protected routes
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware(sessionManager))
 	{
 		api.GET("/users", users.GetAllUsers)
-		api.POST("/posts", profile.CreatePost)
-		api.PUT("/posts/:postID", profile.UpdatePost)
-		api.DELETE("/posts/:postID", profile.DeletePost)
-		api.POST("/posts/:postID/like", profile.LikePost)
-		api.DELETE("/posts/:postID/like", profile.UnlikePost)
+
+		api.POST("/profile/posts", profile.CreatePost)
+		api.PUT("/profile/posts/:postID", profile.UpdatePost)
+		api.DELETE("/profile/posts/:postID", profile.DeletePost)
+		api.POST("/profile/posts/:postID/like", profile.LikePost)
+		api.DELETE("/profile/posts/:postID/like", profile.UnlikePost)
+
+		api.POST("/community/posts", community.CreatePost)
+		api.PUT("/community/posts/:postID", community.UpdatePost)
+		api.DELETE("/community/posts/:postID", community.DeletePost)
+		api.POST("/community/posts/:postID/like", community.LikePost)
+		api.DELETE("/community/posts/:postID/like", community.UnlikePost)
+
 		api.POST("/logout", func(c *gin.Context) {
 			users.LogoutUser(c, sessionManager)
 		})
