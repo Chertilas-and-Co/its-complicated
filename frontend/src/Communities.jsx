@@ -82,6 +82,7 @@ function UserList({ users }) {
   );
 }
 
+
 function PostsList({ posts }) {
   return (
     <>
@@ -199,7 +200,21 @@ function CommunityPage() {
         }}>
           {communityName}
         </div>
-        <div style={{ flex: 1, maxWidth: '340px' }}></div>
+        <div style={{ flex: 1, maxWidth: '340px' , alignItems: 'center'}}><button style={{
+              background: '#222',
+              width: '200px',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '7px 18px',
+              fontSize: '15px',
+              cursor: 'pointer',
+              outline: 'none',
+              margin: '0 auto',
+              display: 'block'
+            }}>
+              Подписаться
+            </button></div>
       </div>
       {/* Основной контент */}
          <div style={{
