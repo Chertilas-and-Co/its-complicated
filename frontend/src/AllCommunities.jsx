@@ -60,9 +60,9 @@ function Sidebar({ title, children }) {
 }
 
 
-function ButtonCommunity() {
+function ButtonCommunity({ communityId }) {
     return (
-        <a href="/community">
+        <a href={`/community/${communityId}`}>
             <button style={{
                 background: '#222',
                 color: '#fff',
@@ -82,6 +82,9 @@ function ButtonCommunity() {
 }
 
 function CommunitiesListCompact({ communities }) {
+    if (!Array.isArray(communities) || communities.length === 0) {
+        return <div>Сообществ нет</div>;
+    }
     return (
         <ul style={{ listStyle: 'none', padding: 0 }}>
             {communities.map(community => (
@@ -155,7 +158,7 @@ function CommunityCard({ community }) {
                     {community.membersCount ? `${community.membersCount} участников` : ''}
                 </div>
 
-                <ButtonCommunity />
+                <ButtonCommunity communityId={community.id} />
 
                 <div style={{
                     flex: 1,
@@ -170,6 +173,9 @@ function CommunityCard({ community }) {
 }
 
 function CommunitiesList({ communities }) {
+    if (!Array.isArray(communities) || communities.length === 0) {
+        return <div>Сообществ нет</div>;
+    }
     return (
         <>
             {communities.map(community => (
