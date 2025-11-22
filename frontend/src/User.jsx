@@ -110,6 +110,49 @@ function CommunitiesList({ communities }) {
   );
 }
 
+function ButtonDiscussion(){
+  return(
+        <a href="/discussion">
+            <button  style={{
+          background: '#222',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '8px',
+          padding: '7px 18px',
+          fontSize: '15px',
+          cursor: 'pointer',
+          outline: 'none',
+          margin: '0 auto',
+          display: 'block'
+        }}>
+            Обсудить
+            </button>
+            </a>
+    ); 
+}
+
+//кнопка, которая появляется только если человек не является нынешним пользователем
+function ButtonFriend({ isFriend, isCurrentUser }) {
+  if (isCurrentUser) return null;
+
+  return (
+    <button
+      style={{
+        padding: '8px 16px',
+        borderRadius: '6px',
+        border: 'none',
+        cursor: isFriend ? 'default' : 'pointer',
+        marginBottom: '20px',
+        backgroundColor: isFriend ? '#e0e0e0' : '#007bff',
+        color: isFriend ? '#555' : '#fff'
+      }}
+      disabled={isFriend}
+    >
+      {isFriend ? 'Друг' : 'Добавить в друзья'}
+    </button>
+  );
+}
+
 function PostsList({ posts }) {
   return (
     <>
@@ -152,20 +195,7 @@ function PostsList({ posts }) {
             gap: '10px',
             width: '100%'
           }}>
-            <button style={{
-              background: '#222',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '7px 18px',
-              fontSize: '15px',
-              cursor: 'pointer',
-              outline: 'none',
-              margin: '0 auto',
-              display: 'block'
-            }}>
-              Обсудить
-            </button>
+            <ButtonDiscussion/>
             <div style={{
               flex: 1,
               textAlign: 'right',
@@ -180,12 +210,23 @@ function PostsList({ posts }) {
   );
 }
 
+
+
 function UserPage() {
+  const currentUserId = 1; // Текущий пользователь
+
   const user = {
+    id: 1,
     avatar: "https://lh3.googleusercontent.com/a/ACg8ocK7OJThoaQ-AVkdzQt5WZE6ayNaFeSfEl-6Dw3SnfndDiIPeuQk=s288-c-no",
     name: "Абоба",
     description: "aboba",
   };
+
+  // Друзья текущего пользователя
+  const currentUserFriends = [
+    { id: 111, name: "Иван", avatar: "https://lh3.googleusercontent.com/a/ACg8ocK7OJThoaQ-AVkdzQt5WZE6ayNaFeSfEl-6Dw3SnfndDiIPeuQk=s288-c-no"},
+    { id: 2, name: "Оля", avatar:"https://lh3.googleusercontent.com/a/ACg8ocK7OJThoaQ-AVkdzQt5WZE6ayNaFeSfEl-6Dw3SnfndDiIPeuQk=s288-c-no" }
+  ];
 
   const friends = [
     { id: 1, name: "Иван", avatar: "https://lh3.googleusercontent.com/a/ACg8ocK7OJThoaQ-AVkdzQt5WZE6ayNaFeSfEl-6Dw3SnfndDiIPeuQk=s288-c-no"},
@@ -206,70 +247,71 @@ function UserPage() {
     { id: 6, content: "Мой первый пост", date: "20.11.2025", image: "" }
   ];
 
+  // Проверяем, является ли просматриваемый пользователь другом текущего пользователя
+  const isFriend = currentUserFriends.some(friend => friend.id === user.id);
+    const isCurrentUser = currentUserId === user.id;
+
   return (
     <>
-    <Navbar/>
-    <div style={{
-      maxHeight: '100vh',
-      width: '95vw',
-      display: 'flex',
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: '24px',
-      fontFamily: 'Arial, sans-serif',
-      background: '#f5f5f5',
-      padding: '30px 20px'
-    }}>
-     <div>
-      <Search />
-      <Sidebar title="Друзья">
-        
-        <FriendList  friends={friends} />
-      </Sidebar>
-      </div>
+      <Navbar/>
       <div style={{
-        flex: 1,
-        width: 'auto',
+        maxHeight: '100vh',
+        width: '95vw',
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        overflowY: 'auto',
-      scrollbarWidth: 'none',
-      msOverflowStyle: 'none'
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: '24px',
+        fontFamily: 'Arial, sans-serif',
+        background: '#f5f5f5',
+        padding: '30px 20px'
       }}>
-        
-        <img
-          src={user.avatar}
-          alt={user.name}
-          style={{
-            width: '128px',
-            height: '128px',
-            borderRadius: '50%',
-            objectFit: 'cover',
-            marginBottom: '16px',
-            border: '3px solid #ececec'
-          }}
-        />
-        <h2 style={{ margin: 0, color: '#000' }}>{user.name}</h2>
-        <p style={{
-          color: '#000',
-          margin: '8px 0 20px 0',
-          textAlign: 'center'
-        }}>{user.description}</p>
-         
-        <PostsList posts={posts} />
-      
+        <div>
+          <Search />
+          <Sidebar title="Друзья">
+            <FriendList friends={friends} />
+          </Sidebar>
+        </div>
+        <div style={{
+          flex: 1,
+          width: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          overflowY: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}>
+          <img
+            src={user.avatar}
+            alt={user.name}
+            style={{
+              width: '128px',
+              height: '128px',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              marginBottom: '16px',
+              border: '3px solid #ececec'
+            }}
+          />
+          <h2 style={{ margin: 0, color: '#000' }}>{user.name}</h2>
+          <p style={{
+            color: '#000',
+            margin: '8px 0 20px 0',
+            textAlign: 'center'
+          }}>{user.description}</p>
+
+           <ButtonFriend isFriend={isFriend} isCurrentUser={isCurrentUser} />
+
+
+          <PostsList posts={posts} />
+        </div>
+
+        <Sidebar title="Сообщества">
+          <CommunitiesList communities={communities} />
+        </Sidebar>
       </div>
-
-      
-
-      <Sidebar title="Сообщества">
-        <CommunitiesList communities={communities} />
-      </Sidebar>
-    </div>
     </>
   );
-  
 }
 
 export default UserPage;
