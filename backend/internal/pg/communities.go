@@ -72,7 +72,7 @@ func GetCommunityByID(c *gin.Context) {
 	}
 
 	var community CommunityResponse
-	query := `SELECT id, name, description, is_private, created_by, created_at FROM communities WHERE id = $1`
+	query := `SELECT id, name, description, is_private FROM communities WHERE id = $1`
 
 	err = DB.QueryRow(query, id).Scan(
 		&community.ID,
@@ -90,7 +90,8 @@ func GetCommunityByID(c *gin.Context) {
 	}
 
 	// Получаем user_id подписчиков для этого сообщества
-	subsQuery := `SELECT user_id FROM community_subscribers WHERE community_id = $1`
+	subsQuery := `SELECT users.id, users.username FROM community_subscriptions JOIN users ON users.id = community_subscriptions.user_id WHERE community_id = $1`
+	println(id)
 	rows, err := DB.Query(subsQuery, id)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "cannot fetch subscribers"})
@@ -101,11 +102,12 @@ func GetCommunityByID(c *gin.Context) {
 	var subscribers []models.User
 	for rows.Next() {
 		var userID int64
-		if err := rows.Scan(&userID); err != nil {
+		var username string
+		if err := rows.Scan(&userID, &username); err != nil {
 			c.JSON(500, gin.H{"error": "error reading subscriber"})
 			return
 		}
-		subscribers = append(subscribers, models.User{ID: userID})
+		subscribers = append(subscribers, models.User{ID: userID, Username: username})
 	}
 	if err := rows.Err(); err != nil {
 		c.JSON(500, gin.H{"error": "error processing subscribers"})
