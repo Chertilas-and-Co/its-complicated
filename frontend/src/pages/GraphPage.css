@@ -1,8 +1,12 @@
 .graph-page-container {
-    margin: 1rem; /* Add top and bottom margin */
-    background-color: #ffffff; /* White background for the "card" */
+    margin: 1rem;
+    background-color: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); /* Soft shadow */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+    display: flex; /* Make it a flex container */
+    flex-direction: column; /* Stack children vertically */
+    height: calc(100vh - 2rem - 60px); /* Adjust based on Navbar height and margins */
+    /* Assuming Navbar height is around 60px and 2rem for total vertical margin */
 }
 
 .graph-title {
@@ -20,4 +24,7 @@
     border-radius: 8px;
     overflow: hidden;
     position: relative; /* For positioning extra elements */
+    display: flex; /* Make it a flex container */
+    flex-grow: 1; /* Allow it to grow and fill available space */
+    min-height: 0; /* Important for flex items in some browsers */
 }

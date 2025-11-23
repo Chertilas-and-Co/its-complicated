@@ -164,7 +164,7 @@ function ForceGraph() {
     }, [highlightLinks]);
 
     return (
-        <div style={{ position: "relative", height: '80vh', width: "100%", background: '#f0f2f5', borderRadius: '8px' }}>
+        <div style={{ position: "relative", flexGrow: 1, width: "100%", background: '#f0f2f5', borderRadius: '8px' }}>
             <ForceGraph2D
                 ref={graphRef}
                 graphData={graphData}
