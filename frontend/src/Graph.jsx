@@ -26,31 +26,47 @@ function ForceGraph() {
         fetch('http://localhost:8080/graph-data')
             .then(res => res.json())
             .then(dataFromBackend => {
+                // dataFromBackend now contains { nodes: [], links: [] }
+                const { nodes: backendNodes, links: backendLinks } = dataFromBackend;
+
+                // Create a map for quick lookup and to add connection count
                 const nodeMap = {};
-                dataFromBackend.forEach(({ id_1, id_2, name_1, desc_1, name_2, desc_2 }) => {
-                    if (!nodeMap[id_1]) nodeMap[id_1] = { id: id_1, name: name_1, description: desc_1, connections: 0 };
-                    if (!nodeMap[id_2]) nodeMap[id_2] = { id: id_2, name: name_2, description: desc_2, connections: 0 };
-                    nodeMap[id_1].connections++;
-                    nodeMap[id_2].connections++;
+                backendNodes.forEach(node => {
+                    nodeMap[node.id] = {
+                        id: node.id,
+                        name: node.name,
+                        description: "Участников: " + node.size,
+                        connections: 0,
+                        size: node.size,
+                    };
                 });
 
-                const scaleSize = (connections) => {
+                // Calculate connections based on links
+                backendLinks.forEach(link => {
+                    if (nodeMap[link.id_1]) nodeMap[link.id_1].connections++;
+                    if (nodeMap[link.id_2]) nodeMap[link.id_2].connections++;
+                });
+
+                const scaleSize = (initialSize, connections) => {
                     const minSize = 8;
                     const maxSize = 30;
-                    return Math.min(maxSize, minSize + connections * 2);
+                    // Scale based on initial size (subscribers) and connections
+                    return Math.min(maxSize, minSize + initialSize * 0.5 + connections * 1);
                 };
 
                 const nodes = Object.values(nodeMap).map(node => ({
                     ...node,
-                    size: scaleSize(node.connections),
+                    size: scaleSize(node.size, node.connections),
                 }));
 
-                const links = dataFromBackend.map(({ id_1, id_2, common_subscribers }) => ({
-                    source: id_1,
-                    target: id_2,
-                    value: common_subscribers,
+                const links = backendLinks.map(link => ({
+                    source: link.id_1,
+                    target: link.id_2,
+                    value: link.common_subscribers,
                 }));
 
+                console.log("Processed nodes:", nodes);
+                console.log("Processed links:", links);
                 setGraphData({ nodes, links });
             });
     }, []);

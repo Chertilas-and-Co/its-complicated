@@ -223,9 +223,9 @@ type DenormalizedLink struct {
 
 // Internal structs for fetching data from DB
 type graphNode struct {
-	ID   int64
-	Name string
-	Size int
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+	Size int    `json:"size"`
 }
 
 type graphLink struct {
@@ -316,8 +316,8 @@ func GetGraphData(c *gin.Context) {
 		return
 	}
 
-	// 3. Transform data into the flat format the frontend expects
-	var response []DenormalizedLink
+	// 3. Prepare the response for the frontend
+	var denormalizedLinks []DenormalizedLink
 	for _, link := range links {
 		sourceNode := nodeMap[link.Source]
 		targetNode := nodeMap[link.Target]
@@ -333,14 +333,27 @@ func GetGraphData(c *gin.Context) {
 			Name2:             targetNode.Name,
 			Desc2:             "Участников: " + strconv.Itoa(targetNode.Size),
 		}
-		response = append(response, denormalized)
+		denormalizedLinks = append(denormalizedLinks, denormalized)
 	}
 
-	if response == nil {
-		response = make([]DenormalizedLink, 0)
+	// Convert nodeMap values to a slice of graphNode
+	var allNodes []graphNode
+	for _, node := range nodeMap {
+		allNodes = append(allNodes, node)
+	}
+
+	response := GraphDataResponse{
+		Nodes: allNodes,
+		Links: denormalizedLinks,
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// GraphDataResponse combines nodes and links for the frontend
+type GraphDataResponse struct {
+	Nodes []graphNode        `json:"nodes"`
+	Links []DenormalizedLink `json:"links"`
 }
 
 func GetCommunitySubscribers(c *gin.Context) {
