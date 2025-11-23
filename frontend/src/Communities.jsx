@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from './Navbar';
 import UserAvatar from '/user.jpg'
 import { useParams } from 'react-router-dom';
+import { useAuth } from './context/AuthContext'; // Import useAuth
 
 function Search() {
     return (
@@ -159,21 +160,105 @@ function PostsList({ posts }) {
 function CommunityPage() {
     const { id } = useParams();
     const [community, setCommunity] = useState(null);
-    // Теперь используйте id для запроса к API
-    useEffect(() => {
-        async function fetchCommunity() {
-            try {
-                const response = await fetch(`http://localhost:8080/community/${id}`);
-                if (!response.ok) throw new Error('Ошибка при загрузке сообщества');
-                const data = await response.json();
-                setCommunity(data);
-            } catch (error) {
-                console.error(error);
-            }
-        }
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const { user } = useAuth(); // Get current user from AuthContext
 
-        fetchCommunity();
-    }, [id]);
+    // Function to fetch community details
+    const fetchCommunityDetails = async () => {
+        try {
+            const response = await fetch(`http://localhost:8080/community/${id}`);
+            if (!response.ok) throw new Error('Ошибка при загрузке сообщества');
+            const data = await response.json();
+            setCommunity(data);
+        } catch (error) {
+            console.error("Ошибка при загрузке сообщества:", error);
+        }
+    };
+
+    // Function to fetch subscription status
+    const fetchSubscriptionStatus = async () => {
+        if (!user || !user.id) { // Only check if user is logged in
+            setIsSubscribed(false);
+            return;
+        }
+        try {
+            const response = await fetch(`http://localhost:8080/api/community/${id}/is_subscribed`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+            });
+            if (!response.ok) {
+                // If not 200 OK, assume not subscribed or error
+                setIsSubscribed(false);
+                return;
+            }
+            const data = await response.json();
+            setIsSubscribed(data.is_subscribed);
+        } catch (error) {
+            console.error("Ошибка при проверке статуса подписки:", error);
+            setIsSubscribed(false);
+        }
+    };
+
+    // Effect to fetch community details and subscription status
+    useEffect(() => {
+        fetchCommunityDetails();
+        fetchSubscriptionStatus();
+    }, [id, user]); // Re-run when community ID or user changes
+
+    const handleSubscribe = async () => {
+        if (!user || !user.id) {
+            alert("Пожалуйста, войдите, чтобы подписаться.");
+            return;
+        }
+        try {
+            const response = await fetch(`http://localhost:8080/api/community/${id}/subscribe`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+            });
+            if (response.ok) {
+                setIsSubscribed(true);
+                fetchCommunityDetails(); // Refresh community data to update subscriber count
+            } else {
+                const errorData = await response.json();
+                alert(`Ошибка подписки: ${errorData.error || response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Ошибка при подписке:", error);
+            alert("Произошла ошибка при подписке.");
+        }
+    };
+
+    const handleUnsubscribe = async () => {
+        if (!user || !user.id) {
+            alert("Пожалуйста, войдите, чтобы отписаться.");
+            return;
+        }
+        try {
+            const response = await fetch(`http://localhost:8080/api/community/${id}/subscribe`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+            });
+            if (response.ok) {
+                setIsSubscribed(false);
+                fetchCommunityDetails(); // Refresh community data to update subscriber count
+            } else {
+                const errorData = await response.json();
+                alert(`Ошибка отписки: ${errorData.error || response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Ошибка при отписке:", error);
+            alert("Произошла ошибка при отписке.");
+        }
+    };
 
     if (!community) {
         return <div>Загрузка...</div>;
@@ -201,7 +286,7 @@ function CommunityPage() {
                 fontFamily: 'Arial, sans-serif',
                 color: 'black'
             }}>
-                {/* Шапка: поиск слева, название по центру, пусто справа */}
+                {/* Шапка: поиск слева, название по центру, кнопка справа */}
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -219,7 +304,24 @@ function CommunityPage() {
                     }}>
                         {community.name}
                     </div>
-                    <div style={{ flex: 1, maxWidth: '340px' }}></div>
+                    <div style={{ flex: 1, maxWidth: '340px', textAlign: 'right' }}>
+                        <button
+                            onClick={isSubscribed ? handleUnsubscribe : handleSubscribe}
+                            disabled={!user || !user.id}
+                            style={{
+                                padding: '8px 16px',
+                                background: isSubscribed ? '#dc3545' : '#28a745', // Red for leave, green for join
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '16px',
+                                opacity: (!user || !user.id) ? 0.6 : 1,
+                            }}
+                        >
+                            {isSubscribed ? 'Покинуть' : 'Присоединиться'}
+                        </button>
+                    </div>
                 </div>
                 {/* Основной контент */}
                 <div style={{

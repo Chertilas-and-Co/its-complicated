@@ -33,6 +33,10 @@ const AppRoutes = () => {
         element={user ? <Navigate to="/" /> : <Register />}
       />
       <Route
+        path="/reg"
+        element={user ? <Navigate to="/" /> : <Register />}
+      />
+      <Route
         path="/"
         element={
           <ProtectedRoute>

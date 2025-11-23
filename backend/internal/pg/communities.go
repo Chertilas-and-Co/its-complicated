@@ -2,14 +2,16 @@ package pg
 
 import (
 	"database/sql"
-	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq"
+	"errors"
+	"fmt"
 	"main/internal/models"
 	"net/http"
 	"strconv"
 	"time"
-	"fmt"
-	"errors"
+
+	"github.com/alexedwards/scs/v2"
+	"github.com/gin-gonic/gin"
+	_ "github.com/lib/pq"
 
 	"log"
 )
@@ -130,47 +132,90 @@ type SubscribeRequest struct {
 	CommunityID int `json:"community_id"`
 }
 
-func SubscribeToCommunity(c *gin.Context) {
-	var subReq SubscribeRequest
-
-	if err := c.ShouldBindJSON(&subReq); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+func SubscribeToCommunity(c *gin.Context, sessionManager *scs.SessionManager) {
+	userID := sessionManager.GetInt64(c.Request.Context(), "userID")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	var exists bool
-	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", subReq.UserID).Scan(&exists)
+	communityIDStr := c.Param("id") // Get community ID from URL parameter
+	communityID, err := strconv.ParseInt(communityIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
-		return
-	}
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "no user with such id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid community ID"})
 		return
 	}
 
-	err = DB.QueryRow("SELECT EXISTS(SELECT 1 FROM commuinties WHERE id = $1)", subReq.CommunityID).Scan(&exists)
+	// Check if already subscribed
+	isSubscribed, err := IsUserSubscribed(userID, communityID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		log.Printf("Error checking subscription status for user %d and community %d: %v", userID, communityID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check subscription status"})
 		return
 	}
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "no community with such id"})
+	if isSubscribed {
+		c.JSON(http.StatusConflict, gin.H{"error": "Already subscribed to this community"})
 		return
 	}
 
-	result, err := DB.Exec("INSERT INTO community_subscriptions (user_id, community_id) VALUES ($1, $2)", subReq.UserID, subReq.CommunityID)
+	err = InsertCommunitySubscription(userID, communityID)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error subscribing user %d to community %d: %v", userID, communityID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to subscribe to community"})
+		return
 	}
 
-	lastInsertID, err := result.LastInsertId()
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully subscribed"})
+}
 
-	if err != nil {
-		log.Println(err)
+// UnsubscribeFromCommunity handles the unsubscription request.
+func UnsubscribeFromCommunity(c *gin.Context, sessionManager *scs.SessionManager) {
+	userID := sessionManager.GetInt64(c.Request.Context(), "userID")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
 	}
-	log.Println("Last inserted id:", lastInsertID)
 
+	communityIDStr := c.Param("id")
+	communityID, err := strconv.ParseInt(communityIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid community ID"})
+		return
+	}
+
+	err = DeleteCommunitySubscription(userID, communityID)
+	if err != nil {
+		log.Printf("Error unsubscribing user %d from community %d: %v", userID, communityID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unsubscribe from community"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully unsubscribed"})
+}
+
+// CheckSubscriptionStatus checks if the authenticated user is subscribed to a community.
+func CheckSubscriptionStatus(c *gin.Context, sessionManager *scs.SessionManager) {
+	userID := sessionManager.GetInt64(c.Request.Context(), "userID")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	communityIDStr := c.Param("id")
+	communityID, err := strconv.ParseInt(communityIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid community ID"})
+		return
+	}
+
+	isSubscribed, err := IsUserSubscribed(userID, communityID)
+	if err != nil {
+		log.Printf("Error checking subscription status for user %d and community %d: %v", userID, communityID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check subscription status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"is_subscribed": isSubscribed})
 }
 func GetAllCommunities(c *gin.Context) {
 	query := `SELECT id, name, description, is_private, created_by, created_at FROM communities`

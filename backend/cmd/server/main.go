@@ -37,6 +37,24 @@ func CreateCommunityHandlerWrapper(
 	}
 }
 
+func SubscribeToCommunityHandlerWrapper(sm *scs.SessionManager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		pg.SubscribeToCommunity(c, sm)
+	}
+}
+
+func UnsubscribeFromCommunityHandlerWrapper(sm *scs.SessionManager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		pg.UnsubscribeFromCommunity(c, sm)
+	}
+}
+
+func CheckSubscriptionStatusHandlerWrapper(sm *scs.SessionManager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		pg.CheckSubscriptionStatus(c, sm)
+	}
+}
+
 func initLogger() {
 	logger, _ := zap.NewDevelopment()
 	zap.ReplaceGlobals(logger)
@@ -142,6 +160,11 @@ func main() {
 
 		// New route for creating communities
 		api.POST("/communities", CreateCommunityHandlerWrapper(sessionManager))
+
+		// Community subscription routes
+		api.POST("/community/:id/subscribe", SubscribeToCommunityHandlerWrapper(sessionManager))
+		api.DELETE("/community/:id/subscribe", UnsubscribeFromCommunityHandlerWrapper(sessionManager))
+		api.GET("/community/:id/is_subscribed", CheckSubscriptionStatusHandlerWrapper(sessionManager))
 
 		api.POST("/community/:id/posts/:postID/comments", comments.CreateComment)
 		api.POST("/user/posts/:postID/comments", comments.CreateComment)

@@ -134,6 +134,8 @@ func AuthorizeUser(c *gin.Context, sessionManager *scs.SessionManager) {
 			return
 		}
 
+		sessionManager.Put(c.Request.Context(), "userID", userData.ID)
+
 		zap.S().Infow("Authorization: success!", "userID", userData.ID)
 		c.JSON(http.StatusOK, gin.H{"message": "authorize success", "user": gin.H{"id": userData.ID, "username": req.Login}})
 	} else {

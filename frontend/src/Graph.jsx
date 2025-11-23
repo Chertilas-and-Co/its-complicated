@@ -65,8 +65,6 @@ function ForceGraph() {
                     value: link.common_subscribers,
                 }));
 
-                console.log("Processed nodes:", nodes);
-                console.log("Processed links:", links);
                 setGraphData({ nodes, links });
             });
     }, []);

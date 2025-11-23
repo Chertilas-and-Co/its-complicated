@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
+      credentials: 'include',
     });
 
     if (response.ok) {
@@ -41,6 +42,7 @@ export const AuthProvider = ({ children }) => {
             "Content-Type": "application/json",
         },
         body: JSON.stringify(credentials),
+        credentials: 'include',
     });
     return response;
   };
