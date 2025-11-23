@@ -182,7 +182,7 @@ function PostsList({ posts, communityId, fetchCommunityPosts }) { // Добав�
                         gap: '10px',
                         width: '100%'
                     }}>
-                        <div style={{ flex: 1 }}>Автор: {post.author_id}</div> {/* Предполагаем, что author_id доступен */}
+                        <div style={{ flex: 1 }}>Автор: {post.author_username}</div> {/* Используем имя пользователя автора */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                             <button onClick={() => handleLike(post.id)} disabled={!user || !user.id} style={{
                                 background: '#28a745',

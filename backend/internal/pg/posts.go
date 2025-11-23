@@ -99,10 +99,11 @@ func GetUserPosts(
 
 	// Получаем посты с учетом пагинации
 	const postsQuery = `
-		SELECT id, title, text, pic_url, community_id, author_id, created_at, updated_at
-		FROM posts
-		WHERE community_id = $1
-		ORDER BY created_at DESC
+		SELECT p.id, p.title, p.text, p.pic_url, p.community_id, p.author_id, u.username, p.created_at, p.updated_at
+		FROM posts p
+		JOIN users u ON p.author_id = u.id
+		WHERE p.community_id = $1 AND p.author_id IS NOT NULL
+		ORDER BY p.created_at DESC
 		LIMIT $2 OFFSET $3
 	`
 
@@ -124,6 +125,7 @@ func GetUserPosts(
 			&post.PicURL,
 			&post.CommunityID,
 			&post.AuthorID,
+			&post.AuthorUsername, // Добавляем сканирование имени пользователя
 			&post.CreatedAt,
 			&post.UpdatedAt,
 		)
@@ -264,10 +266,11 @@ func GetCommunityPosts(
 
 	// Получаем посты с учетом пагинации
 	const postsQuery = `
-		SELECT id, title, text, pic_url, community_id, author_id, created_at, updated_at
-		FROM posts
-		WHERE community_id = $1 AND author_id IS NOT NULL
-		ORDER BY created_at DESC
+		SELECT p.id, p.title, p.text, p.pic_url, p.community_id, p.author_id, u.username, p.created_at, p.updated_at
+		FROM posts p
+		JOIN users u ON p.author_id = u.id
+		WHERE p.community_id = $1 AND p.author_id IS NOT NULL
+		ORDER BY p.created_at DESC
 		LIMIT $2 OFFSET $3
 	`
 
@@ -289,6 +292,7 @@ func GetCommunityPosts(
 			&post.PicURL,
 			&post.CommunityID,
 			&post.AuthorID,
+			&post.AuthorUsername, // Добавляем сканирование имени пользователя
 			&post.CreatedAt,
 			&post.UpdatedAt,
 		)
