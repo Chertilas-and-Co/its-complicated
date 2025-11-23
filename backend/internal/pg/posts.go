@@ -241,3 +241,68 @@ func UnlikePost(
 
 	return nil
 }
+
+// GetCommunityPosts retrieves all posts for a specific community with pagination
+// Возвращает слайс постов, общее количество постов и ошибку
+func GetCommunityPosts(
+	ctx context.Context,
+	communityID int64,
+	limit, offset int,
+) ([]*models.Post, int64, error) {
+	// Получаем общее количество постов сообщества
+	const countQuery = `
+		SELECT COUNT(*)
+		FROM posts
+		WHERE community_id = $1 AND author_id IS NOT NULL
+	`
+
+	var total int64
+	err := DB.QueryRowContext(ctx, countQuery, communityID).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count community posts: %w", err)
+	}
+
+	// Получаем посты с учетом пагинации
+	const postsQuery = `
+		SELECT id, title, text, pic_url, community_id, author_id, created_at, updated_at
+		FROM posts
+		WHERE community_id = $1 AND author_id IS NOT NULL
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := DB.QueryContext(ctx, postsQuery, communityID, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to fetch community posts: %w", err)
+	}
+	defer rows.Close()
+
+	posts := make([]*models.Post, 0, limit)
+
+	for rows.Next() {
+		post := &models.Post{}
+
+		err := rows.Scan(
+			&post.ID,
+			&post.Title,
+			&post.Text,
+			&post.PicURL,
+			&post.CommunityID,
+			&post.AuthorID,
+			&post.CreatedAt,
+			&post.UpdatedAt,
+		)
+
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan community post: %w", err)
+		}
+
+		posts = append(posts, post)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("row iteration error for community posts: %w", err)
+	}
+
+	return posts, total, nil
+}

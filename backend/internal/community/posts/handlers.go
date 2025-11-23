@@ -22,13 +22,14 @@ var (
 // POST /api/profile/posts
 // Требует авторизацию (userID в контексте)
 func CreatePost(c *gin.Context) {
-	communityID, exists := c.Get("CommunityID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unknown community"})
+	communityIDStr := c.Param("id") // Извлекаем communityID из URL
+	communityID, err := strconv.ParseInt(communityIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid community ID"})
 		return
 	}
 
-	userID, exists := c.Get("UserID")
+	userID, exists := c.Get("userID") // Извлекаем userID из контекста, установленного middleware
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
@@ -49,7 +50,7 @@ func CreatePost(c *gin.Context) {
 		Title:       req.Title,
 		Text:        req.Text,
 		PicURL:      req.PicURL,
-		CommunityID: communityID.(int64), // Для профиля - CommunityID = UserID
+		CommunityID: communityID, // Для профиля - CommunityID = UserID
 		AuthorID:    userID.(int64),
 	}
 
@@ -67,13 +68,13 @@ func CreatePost(c *gin.Context) {
 	})
 }
 
-// GetUserPosts retrieves all posts for a user
-// GET /api/profile/:userID/posts?limit=20&offset=40
-func GetUserPosts(c *gin.Context) {
-	userIDParam := c.Param("id")
-	userID, err := strconv.ParseInt(userIDParam, 10, 64)
+// GetCommunityPosts retrieves all posts for a community
+// GET /community/:id/posts?limit=20&offset=40
+func GetCommunityPosts(c *gin.Context) {
+	communityIDParam := c.Param("id") // Извлекаем communityID из URL
+	communityID, err := strconv.ParseInt(communityIDParam, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid community ID"})
 		return
 	}
 
@@ -93,9 +94,9 @@ func GetUserPosts(c *gin.Context) {
 		}
 	}
 
-	posts, total, err := pg.GetUserPosts(
+	posts, total, err := pg.GetCommunityPosts( // Вызываем новую функцию pg.GetCommunityPosts
 		c.Request.Context(),
-		userID,
+		communityID,
 		limit,
 		offset,
 	)
